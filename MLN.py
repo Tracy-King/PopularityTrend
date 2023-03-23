@@ -265,13 +265,13 @@ def duplicated_description():
     return df_overlap
 
 def channelFeatures(df):
-    nodeFeature = pd.read_csv('result_{}_{}.csv'.format(PERIOD, START))
+    nodeFeature = pd.read_csv('results/result_{}_{}.csv'.format(PERIOD, START))
 
     return nodeFeature
 
 def target(date_concat):
     df = pd.concat([
-        pd.read_csv('result_{}_{}.csv'.format(PERIOD, date), index_col=0)
+        pd.read_csv('results/result_{}_{}.csv'.format(PERIOD, date), index_col=0)
         for date in date_concat], ignore_index=True)
 
     df['target'] = df.groupby(['channelId'])['totalSC'].shift(-1)
@@ -312,12 +312,12 @@ def main():
     label = target(date_concat)
     dateList = label['date'].drop_duplicates().tolist()
 
-    overlap_description = pd.read_csv('overlap_description.csv', index_col=0)  # description
+    overlap_description = pd.read_csv('overlaps/overlap_description.csv', index_col=0)  # description
     nodeList = overlap_description.index.tolist()
 
-    node_feature = [DF2Adj_nodeFeature(nodeList, pd.read_csv('result_{}_{}.csv'.format(PERIOD, date), index_col=0)) for date in date_concat]
-    adj_viewer = [DF2Adj(nodeList, pd.read_csv('overlap_viewers_{}.csv'.format(date), index_col=0)) for date in date_concat]         # viewer
-    adj_period = [DF2Adj(nodeList, pd.read_csv('overlap_period_{}.csv'.format(date), index_col=0)) for date in date_concat]          # period
+    node_feature = [DF2Adj_nodeFeature(nodeList, pd.read_csv('results/result_{}_{}.csv'.format(PERIOD, date), index_col=0)) for date in date_concat]
+    adj_viewer = [DF2Adj(nodeList, pd.read_csv('overlaps/overlap_viewers_{}.csv'.format(date), index_col=0)) for date in date_concat]         # viewer
+    adj_period = [DF2Adj(nodeList, pd.read_csv('overlaps/overlap_period_{}.csv'.format(date), index_col=0)) for date in date_concat]          # period
     adj_description = overlap_description.to_numpy()
 
 
