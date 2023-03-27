@@ -6,6 +6,7 @@ import argparse
 from tqdm import tqdm
 import sys
 import scipy.sparse as sp
+import os
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
@@ -249,20 +250,55 @@ def channelFeatures(df):
 
     return nodeFeature
 
-def target(date_concat):
-    df = pd.concat([
-        pd.read_csv('results/result_{}_{}.csv'.format(PERIOD, date), index_col=0)
-        for date in date_concat], ignore_index=True)
+def target(date_concat, p, label_concat):
+
+    if os.path.isfile('label_{}.csv'.format(p)) and os.path.isfile('node_features_{}.csv'.format(p)):
+        target = pd.read_csv('label_{}.csv'.format(p), index_col=0)
+        node_features = pd.read_csv('node_features_{}.csv'.format(p), index_col=0)
+        return target, node_features
+
+
+    if p == 'm':
+        df = pd.concat([
+            pd.read_csv('results/result_{}_{}.csv'.format(p, date), index_col=0)
+            for date in label_concat], ignore_index=True)
+
+    elif p =='w':
+        c_list = []
+        for date in label_concat:
+            tmp = pd.read_csv('results/result_{}_{}.csv'.format(p, date), index_col=0)
+            dates = tmp['date'].drop_duplicates().tolist()
+            filenames = [date+'-{}'.format(i) for i in range(len(dates))]
+
+            sort_map = pd.DataFrame({'date': dates, 'filename': filenames}).reset_index().set_index('date')
+            tmp['filename'] = tmp['date'].map(sort_map['filename'])
+            df = df.drop(['date'], axis=1)
+            df = df.rename(columns={'filename': 'date'})
+            #print(sort_map)
+            #print(tmp.head(5))
+            c_list.append(tmp)
+
+        df = pd.concat(c_list, ignore_index=True)
+
 
     df['target'] = df.groupby(['channelId'])['totalSC'].shift(-1)
-    nodelist = df['channelId'].unique()
+    #nodelist = df['channelId'].unique()
     df = df.query('target == target')
-    #x = df.drop(['date', 'channelId', 'target', 'Unnamed: 0'], axis=1).astype('float32')
+
 
     target = df[['date', 'channelId', 'target']]
-    target.to_csv('label_{}.csv'.format(PERIOD))
+    node_features = df.drop(['target'], axis=1)
+    '''
+    for date in date_concat:
+        tmp_df = node_features.query('date == @date')
+        duplicate_channels = tmp_df.duplicated(subset=['channelId'], keep=False)
+        #print(duplicate_channels)
+        #print(tmp_df[duplicate_channels])
+    '''
+    target.to_csv('label_{}.csv'.format(p))
+    node_features.to_csv('node_features_{}.csv'.format(p))
 
-    return target
+    return target, node_features
 
 
 if __name__ == "__main__":

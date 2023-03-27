@@ -20,12 +20,12 @@ def DF2Adj(nodeList, df):
 
     return sp.csr_matrix(result.to_numpy(), dtype=np.float32)
 
-def DF2Adj_nodeFeature(nodeList, df):
-    channels = pd.read_csv('Vtuber1B_elements/channels.csv')
-    df = pd.merge(df, channels[['channelId', 'subscriptionCount', 'videoCount']], how='left', on='channelId')
+def DF2Adj_nodeFeature(nodeList, node_feature_df, date):
+    df = node_feature_df.query('date == @date')
     tmp =df.drop(['date'], axis=1).set_index('channelId')
-    nodes = df.index.to_list()
+    #nodes = df.index.to_list()
     result = tmp.reindex(nodeList, axis='rows', fill_value=0.0)
+
     return sp.csr_matrix(result.to_numpy(), dtype=np.float32)
 
 
@@ -45,22 +45,31 @@ def readData(period):
 
     #date_concat = ['2021-09', '2021-10', '2021-11']
 
+    label_concat = [re.findall(r'results\\result_[mwd]_(\d{4}-\d{2}).csv', f)[0]
+                       for f in glob.glob('results\\result_{}_*.csv'.format(period))
+                       if re.match(r'results\\result_[mwd]_(\d{4}-\d{2}).csv', f)]
+
     adj_viewer = dict()
     adj_period = dict()
     node_feature = dict()
     nodes = dict()
 
-    #print(date_concat)
-    labels = target(date_concat)
+    print(label_concat)
+    print(date_concat)
+    labels, node_feature_df = target(date_concat, period, label_concat)
+    channels = pd.read_csv('Vtuber1B_elements/channels.csv')
+    node_feature_df = pd.merge(node_feature_df, channels[['channelId', 'subscriptionCount', 'videoCount']], how='left',
+                  on='channelId')
 
-    dateList = labels['date'].drop_duplicates().tolist()
+    #dateList = labels['date'].drop_duplicates().tolist()
 
 
     overlap_description = pd.read_csv('overlaps/overlap_description.csv', index_col=0)  # description
     nodeList = overlap_description.index.tolist()
+    #print(node_feature_df.head(5))
 
     for date in date_concat:
-        node_feature[date] = DF2Adj_nodeFeature(nodeList, pd.read_csv('results/result_{}_{}.csv'.format(period, date)))
+        node_feature[date] = DF2Adj_nodeFeature(nodeList, node_feature_df, date)
         # viewer                                                              , index_col=0))
         adj_viewer[date] = DF2Adj(nodeList, pd.read_csv('overlaps/overlap_viewers_{}.csv'.format(date), index_col=0))
         # period
@@ -71,9 +80,9 @@ def readData(period):
 
     adj_description = overlap_description.to_numpy()
 
-    print(dateList)
+    #print(dateList)
 
-    return dateList, node_feature, adj_viewer, adj_period, adj_description, labels, nodes, nodeList
+    return date_concat[:-1], node_feature, adj_viewer, adj_period, adj_description, labels, nodes, nodeList
 
 f = glob.glob('overlaps/overlap_viewers_*.csv')
 
