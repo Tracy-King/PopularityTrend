@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import scipy.sparse as sp
 from models import GCN, LSTMNet, Linear, MLP
+from layers import TemporalAttentionLayer
 
 
 class MLN(torch.nn.Module):
@@ -23,9 +24,9 @@ class MLN(torch.nn.Module):
         self.n_nodes = len(self.nodelist)
         self.device = device
 
-        self.node_embedding_dict = dict()
-        self.y_pred_dict = dict()
-        self.y_true_dict = dict()
+        #self.node_embedding_dict = dict()
+        #self.y_pred_dict = dict()
+        #self.y_true_dict = dict()
 
         self.last_hidden_v = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
         self.last_hidden_p = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
@@ -39,6 +40,13 @@ class MLN(torch.nn.Module):
         self.rnn_p = LSTMNet(self.hidden, self.hidden, dropout=self.dropout)
         self.linear = Linear(self.feature_dim, self.hidden, dropout=self.dropout)
         self.MLP = MLP(self.hidden, self.dropout)
+        self.attention_model = TemporalAttentionLayer(
+            n_node_embedding=self.hidden,
+            n_node_old_embedding=self.hidden,
+            n_hidden_embedding=self.hidden,
+            output_dimension=self.hidden,
+            n_head=2,
+            dropout=self.dropout)
 
     def normalize(self, mx):
         """Row-normalize sparse matrix"""
@@ -101,22 +109,33 @@ class MLN(torch.nn.Module):
                                             torch.from_numpy(self.last_c_p).to(self.device))
         hidden_embedding_f = self.linear(features)
 
-        node_embedding = torch.from_numpy(self.hidden_embedding).to(self.device) + hidden_embedding_f + \
-                         torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+        mask = hidden_embedding_v == 0
+
+        #node_embedding = torch.from_numpy(self.hidden_embedding).to(self.device) + hidden_embedding_f + \
+        #                 torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+
+        hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+
+
+        node_embedding = self.attention_model(torch.from_numpy(self.hidden_embedding).to(self.device),
+                                              hidden_embedding_f,
+                                              hidden_embedding,
+                                              mask)
+
 
 
         y_pred = self.MLP(node_embedding)
         node_idx = [self.nodelist.index(x) for x in channels]
 
         filtered_node_embedding = node_embedding[node_idx]
-        filtered_y_pred = y_pred[node_idx]
+        filtered_y_pred = abs(y_pred[node_idx])
         tmp = self.labels.query('date == @date')
         filtered_y_true = torch.tensor(np.array([tmp.query('channelId == @x')['target'].values
                                                  for x in channels])).to(self.device)
 
-        self.node_embedding_dict[date] = filtered_node_embedding
-        self.y_pred_dict[date] = filtered_y_pred
-        self.y_true_dict[date] = filtered_y_true
+        #self.node_embedding_dict[date] = filtered_node_embedding
+        #self.y_pred_dict[date] = filtered_y_pred
+        #self.y_true_dict[date] = filtered_y_true
 
         with torch.no_grad():
             self.hidden_embedding = node_embedding.detach().cpu().numpy()

@@ -60,11 +60,13 @@ def dataSplit(df):
     return x.to_numpy(), y.to_numpy()
 
 
-def LR(x, y, test_size):
+def LR(x, y, test_size, std, mean):
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
     reg = LinearRegression().fit(X_train, y_train)
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
+
+    y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -74,11 +76,13 @@ def LR(x, y, test_size):
     f.write('Linear Regression---(t={})--------\n'.format(test_size))
     f.write('RMSE: {}, MAPE: {}, R^2: {}\n'.format(rmse, mape, score))
 
-def Rdg(x, y, test_size, alpha):
+def Rdg(x, y, test_size, alpha, std, mean):
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
     reg = Ridge(alpha=alpha).fit(X_train, y_train)
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
+
+    y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -88,11 +92,13 @@ def Rdg(x, y, test_size, alpha):
     f.write('Ridge---(t={})--------\n'.format(test_size))
     f.write('RMSE: {}, MAPE: {}, R^2: {}\n'.format(rmse, mape, score))
 
-def Lso(x, y, test_size, alpha):
+def Lso(x, y, test_size, alpha, std, mean):
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
     reg = Lasso(alpha=alpha).fit(X_train, y_train)
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
+
+    y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -102,11 +108,13 @@ def Lso(x, y, test_size, alpha):
     f.write('Lasso---(t={})--------\n'.format(test_size))
     f.write('RMSE: {}, MAPE: {}, R^2: {}\n'.format(rmse, mape, score))
 
-def SGD(x, y, test_size):
+def SGD(x, y, test_size, std, mean):
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
     reg = make_pipeline(StandardScaler(), SGDRegressor(max_iter=1000, tol=1e-3)).fit(X_train, y_train)
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
+
+    y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -116,11 +124,13 @@ def SGD(x, y, test_size):
     f.write('SGD---(t={})--------\n'.format(test_size))
     f.write('RMSE: {}, MAPE: {}, R^2: {}\n'.format(rmse, mape, score))
 
-def GBR(x, y, test_size):
+def GBR(x, y, test_size, std, mean):
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
     reg = GradientBoostingRegressor(random_state=0).fit(X_train, y_train)
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
+
+    y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -130,12 +140,14 @@ def GBR(x, y, test_size):
     f.write('GBR---(t={})--------\n'.format(test_size))
     f.write('RMSE: {}, MAPE: {}, R^2: {}\n'.format(rmse, mape, score))
 
-def XGBoost(x, y, test_size, es=1000, depth=7):
+def XGBoost(x, y, test_size, std, mean, es=1000, depth=7):
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
     model = xgboost.XGBRegressor(n_estimators=es, max_depth=depth, eta=0.1, subsample=0.7,
                                  colsample_bytree=0.8).fit(X_train, y_train)
     score = model.score(X_train, y_train)
     y_pred = model.predict(X_test)
+
+    y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -146,7 +158,7 @@ def XGBoost(x, y, test_size, es=1000, depth=7):
     f.write('RMSE: {}, MAPE: {}, R^2: {}\n'.format(rmse, mape, score))
 
 
-def NN(x, y, test_size):
+def NN(x, y, test_size, mean, std):
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
 
     mean = X_train.mean(axis=0)
@@ -216,6 +228,7 @@ def NN(x, y, test_size):
 
             # get output from the model, given the inputs
             outputs = model(inputs_batch)
+            outputs = outputs*torch.FloatTensor(std).cuda() + torch.FloatTensor(mean).cuda()
 
             # get loss for the predicted output
             loss += criterion(outputs, labels_batch)
@@ -252,7 +265,7 @@ def NN(x, y, test_size):
 def main():
     df = pd.concat([
         pd.read_csv(f)
-        for f in glob.iglob('result_{}_*.csv'.format(PERIOD))], ignore_index=True)
+        for f in glob.iglob('results/result_{}_*.csv'.format(PERIOD))], ignore_index=True)
     print(df.info())
     #result = readData(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
     x, y = dataSplit(df)
@@ -272,9 +285,9 @@ def main():
     print(mean, std)
 
     mean = y.mean(axis=0)
-    y -= mean  # 等价于 train_data = train_data - mean
+    #y -= mean  # 等价于 train_data = train_data - mean
     std = y.std(axis=0)
-    y / (1 + std)
+    #y / (1 + std)
     print(mean, std)
 
     #print(x.shape, y.shape)
@@ -283,13 +296,13 @@ def main():
 
     t = 0.1
     a = 1
-    LR(x, y, t)
-    SGD(x, y, t)
-    GBR(x, y, t)
-    XGBoost(x, y, t)
-    NN(x, y, t)
-    Rdg(x, y, t, a)
-    Lso(x, y, t, a)
+    LR(x, y, t, mean, std)
+    SGD(x, y, t, mean, std)
+    GBR(x, y, t, mean, std)
+    XGBoost(x, y, t, mean, std)
+    NN(x, y, t, mean, std)
+    Rdg(x, y, t, a, mean, std)
+    Lso(x, y, t, a, mean, std)
     '''
     for t in test_size:
         LR(x, y, t)
