@@ -19,8 +19,8 @@ parser.add_argument('--period', type=str, default="m", choices=[
 parser.add_argument('--year', type=str, default="2022", choices=["2021", "2022"],
                     help='Period of data separation(day, week, month)')
 parser.add_argument('--epochs', type=int, default=10,
-                    help='Number of epochs to train.')
-parser.add_argument('--prefix', type=str, default='attn_3_29', help='Prefix to name the checkpoints')
+                    help='Number of epochs to train.')          # straight_5_18  attn_3_29
+parser.add_argument('--prefix', type=str, default='straight_5_18', help='Prefix to name the checkpoints')
 parser.add_argument('--coldstart', type=int, default=10, help='Number of data for pretraining')
 parser.add_argument('--lr', type=float, default=0.1,
                     help='Initial learning rate.')
@@ -81,6 +81,9 @@ device = torch.device(device_string)
 
 datelist, node_feature, adj_viewer, adj_period, adj_description, labels, nodes, nodelist = readData(PERIOD)
 
+
+
+
 #datelist = datelist[:-5]
 
 #cs_list = datelist[:COLDSTART]
@@ -104,7 +107,7 @@ early_stopper = EarlyStopMonitor(max_round=args.patience)
 
 params = list(model.parameters())
 optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
-criterion = torch.nn.MSELoss()
+criterion = torch.nn.L1Loss()#torch.nn.MSELoss()
 
 
 early_stopper = EarlyStopMonitor(max_round=args.patience, higher_better=False)
@@ -123,13 +126,17 @@ for epoch in range(args.epochs):
         #print(datelist[k])
         #print(len(nodes[datelist[k]]))
 
-        node_embedding, y_pred, y_true = model.get_embedding(datelist[k])
+        node_embedding, output, y_true = model.get_embedding(datelist[k])
 
-        loss_train = criterion(y_pred, y_true)
+        norm = np.array([norm_dict[x] for x in nodes[datelist[k]]])  # [0]: mu, [1]: sigma
+        y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
+                 + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)
+        #print(y_pred.dtype, y_true.dtype)
+        loss_train = criterion(y_pred.to(torch.float32), y_true)
         loss += loss_train
         if k >= COLDSTART:
             with torch.no_grad():
-                rmse, mape, r2, mae = evaluation(y_pred, y_true, norm_dict, nodes[datelist[k]])
+                rmse, mape, r2, mae = evaluation(y_pred, y_true)
             logger.info('Date: {}'.format(datelist[k]))
             logger.info('Loss: {:.4f}'.format(loss_train.item()))
             logger.info('RMSE: {:.4f}, MAPE: {:.4f}, R2_score: {:.4f}, MAE: {:.4f}'.format(rmse, mape, r2, mae))
@@ -139,11 +146,17 @@ for epoch in range(args.epochs):
     optimizer.step()
 
     model.eval()
-    node_embedding, y_pred, y_true = model.get_embedding(datelist[-2])
+    node_embedding, output, y_true = model.get_embedding(datelist[-2])
+
+
+    norm = np.array([norm_dict[x] for x in nodes[datelist[-2]]])  # [0]: mu, [1]: sigma
+    y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
+             + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)
+
     loss_val = criterion(y_pred, y_true)
 
     with torch.no_grad():
-        rmse, mape, r2, mae = evaluation(y_pred, y_true, norm_dict, nodes[datelist[-2]])
+        rmse, mape, r2, mae = evaluation(y_pred, y_true)
     logger.info('Validation-----------------'.format(datelist[-2]))
     logger.info('Date: {}'.format(datelist[-2]))
     logger.info('Loss: {:.4f}'.format(loss_val.item()))
@@ -152,7 +165,7 @@ for epoch in range(args.epochs):
     logger.info("Optimization Finished!")
     logger.info('Epoch {:04d} time: {:.4f}s'.format(epoch + 1, time.time() - t))
 
-    if early_stopper.early_stop_check(mape):
+    if early_stopper.early_stop_check(loss.item()):
         logger.info("No improvement over {} epochs, stop training".format(early_stopper.max_round))
         break
     else:
@@ -167,11 +180,18 @@ model.load_state_dict(torch.load(best_model_path))
 logger.info(f"Loaded the best model at epoch {early_stopper.best_epoch} for inference")
 
 model.eval()
-node_embedding, y_pred, y_true = model.get_embedding(datelist[-1])
+node_embedding, output, y_true = model.get_embedding(datelist[-1])
+
+norm = np.array([norm_dict[x] for x in nodes[datelist[-1]]])  # [0]: mu, [1]: sigma
+y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
+             + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)
+
 loss_test = criterion(y_pred, y_true)
 
+print(output[:10], y_pred[:10], y_true[:10])
+
 with torch.no_grad():
-    rmse, mape, r2, mae = evaluation(y_pred, y_true, norm_dict, nodes[datelist[-1]])
+    rmse, mape, r2, mae = evaluation(y_pred, y_true)
 logger.info('Test-----------------'.format(datelist[-1]))
 logger.info('Date: {}'.format(datelist[-1]))
 logger.info('Loss: {:.4f}'.format(loss_val.item()))

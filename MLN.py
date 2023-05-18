@@ -20,7 +20,7 @@ class MLN(torch.nn.Module):
         self.nodelist = nodelist
         self.dropout = dropout
         self.hidden = hidden_dim
-        self.feature_dim = 17
+        self.feature_dim = 10  #17
         self.n_nodes = len(self.nodelist)
         self.device = device
 
@@ -72,6 +72,8 @@ class MLN(torch.nn.Module):
         adj_p = self.adj_period[date]
         channels = self.nodes[date]
 
+        #print(features.shape, features[:3])
+
         # build symmetric adjacency matrix
         adj_v = adj_v + adj_v.T.multiply(adj_v.T > adj_v) - adj_v.multiply(adj_v.T > adj_v)
         adj_v = self.normalize(adj_v + sp.eye(adj_v.shape[0]))
@@ -111,9 +113,13 @@ class MLN(torch.nn.Module):
 
         mask = hidden_embedding_v == 0
 
-        #node_embedding = torch.from_numpy(self.hidden_embedding).to(self.device) + hidden_embedding_f + \
-        #                 torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
 
+        # Straight
+        node_embedding = torch.from_numpy(self.hidden_embedding).to(self.device) + hidden_embedding_f + \
+                         torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+
+        '''
+        # Multi-head attention
         hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
 
 
@@ -122,15 +128,16 @@ class MLN(torch.nn.Module):
                                               hidden_embedding,
                                               mask)
 
+        '''
 
 
-        y_pred = self.MLP(node_embedding)
+        #y_pred = self.MLP(node_embedding)
         node_idx = [self.nodelist.index(x) for x in channels]
 
         filtered_node_embedding = node_embedding[node_idx]
-        filtered_y_pred = abs(y_pred[node_idx])
+        filtered_y_pred = abs(self.MLP(node_embedding[node_idx]))
         tmp = self.labels.query('date == @date')
-        filtered_y_true = torch.tensor(np.array([tmp.query('channelId == @x')['target'].values
+        filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['target'].values
                                                  for x in channels])).to(self.device)
 
         #self.node_embedding_dict[date] = filtered_node_embedding

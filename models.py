@@ -39,7 +39,7 @@ class MLP(nn.Module):
         x = self.dropout(x)
         x = self.act(self.bn_2(self.fc_2(x)))
         x = self.dropout(x)
-        x = self.fc_3(x)
+        x = self.act(self.fc_3(x))
         x = self.dropout(x)
         return x
 

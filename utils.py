@@ -39,14 +39,14 @@ def accuracy(output, labels):
     return correct / len(labels)
 
 
-def evaluation(output, labels, norm_dict, nodes):
-    norm = np.array([norm_dict[x] for x in nodes])      # [0]: mu, [1]: sigma
+def evaluation(output, labels):
+    #norm = np.array([norm_dict[x] for x in nodes])      # [0]: mu, [1]: sigma
     #print(norm[-10:])
     #print(np.isnan(norm).any())
     output = output.detach().cpu().numpy()
     labels = labels.detach().cpu().numpy()
     #print(output.shape, labels.shape, norm[:, 1].shape)
-    output = output * np.expand_dims(norm[:, 1], axis=1) + np.expand_dims(norm[:, 0], axis=1)
+    #output = output * np.expand_dims(norm[:, 1], axis=1) + np.expand_dims(norm[:, 0], axis=1)
     #output = abs(output * norm_sigma + norm_mu)
     #print(output.shape, labels.shape)
     #labels = (labels - np.mean(norm, axis=0)) / np.std(norm, axis=0)

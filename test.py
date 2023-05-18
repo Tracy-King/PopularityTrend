@@ -156,9 +156,15 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    df = pd.read_csv('overlap_period.csv')
-    print(df)
+    df = pd.read_csv('Vtuber1B_elements\chat_stats.csv')
+    #df = pd.read_csv('overlap_period.csv')
+    #print(df)
     print(df.info())
+    tmp = df.query('period == "2021-03" | period == "2021-04"')
+    print(tmp.info())
+
+
+    print(tmp['chats'].sum())
 
 
 

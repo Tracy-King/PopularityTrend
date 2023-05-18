@@ -13,6 +13,8 @@ date_concat = ['2021-04']
 
 period = 'm'
 
+pd.set_option('display.max_columns', None)
+
 
 def DF2Adj(nodeList, df):
     tmp = df.reindex(nodeList, axis='columns', fill_value=0.0)
@@ -25,6 +27,10 @@ def DF2Adj_nodeFeature(nodeList, node_feature_df, date):
     tmp =df.drop(['date'], axis=1).set_index('channelId')
     #nodes = df.index.to_list()
     result = tmp.reindex(nodeList, axis='rows', fill_value=0.0)
+
+    result = result.drop(['impact1', 'impact2', 'impact3', 'impact4', 'impact5', 'impact6', 'impact7'], axis=1)
+
+    #print(result)
 
     return sp.csr_matrix(result.to_numpy(), dtype=np.float32)
 
@@ -111,3 +117,6 @@ elif period == 'w':
 
 print(date_concat)
 '''
+
+if __name__ == "__main__":
+    readData(period)
