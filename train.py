@@ -21,10 +21,10 @@ parser.add_argument('--year', type=str, default="2022", choices=["2021", "2022"]
 parser.add_argument('--epochs', type=int, default=10,
                     help='Number of epochs to train.')          # straight_5_18  attn_3_29
 parser.add_argument('--prefix', type=str, default='straight_5_18', help='Prefix to name the checkpoints')
-parser.add_argument('--coldstart', type=int, default=10, help='Number of data for pretraining')
-parser.add_argument('--lr', type=float, default=0.1,
+parser.add_argument('--coldstart', type=int, default=8, help='Number of data for pretraining')
+parser.add_argument('--lr', type=float, default=0.01,
                     help='Initial learning rate.')
-parser.add_argument('--weight_decay', type=float, default=1e-2,
+parser.add_argument('--weight_decay', type=float, default=1e-1,
                     help='Weight decay (L2 loss on parameters).')
 parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping')
 parser.add_argument('--hidden', type=int, default=128,
@@ -107,7 +107,7 @@ early_stopper = EarlyStopMonitor(max_round=args.patience)
 
 params = list(model.parameters())
 optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
-criterion = torch.nn.L1Loss()#torch.nn.MSELoss()
+criterion = torch.nn.SmoothL1Loss()#torch.nn.MSELoss()
 
 
 early_stopper = EarlyStopMonitor(max_round=args.patience, higher_better=False)
@@ -115,7 +115,7 @@ for epoch in range(args.epochs):
     logger.info('Epoch {:04d} start!'.format(epoch+1))
     t = time.time()
 
-    model = model.train()
+    model.train()
     loss = 0
     train_auc = 0
     train_pre = 0
@@ -130,9 +130,14 @@ for epoch in range(args.epochs):
 
         norm = np.array([norm_dict[x] for x in nodes[datelist[k]]])  # [0]: mu, [1]: sigma
         y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-                 + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)
+                 + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)  #
+
+
+        #y_pred = output
+        #print(output[:10], y_pred[:10], y_true[:10])
+
         #print(y_pred.dtype, y_true.dtype)
-        loss_train = criterion(y_pred.to(torch.float32), y_true)
+        loss_train = criterion(y_pred.to(torch.float32), y_true.to(torch.float32))
         loss += loss_train
         if k >= COLDSTART:
             with torch.no_grad():
@@ -151,9 +156,12 @@ for epoch in range(args.epochs):
 
     norm = np.array([norm_dict[x] for x in nodes[datelist[-2]]])  # [0]: mu, [1]: sigma
     y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-             + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)
+             + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)  #
 
-    loss_val = criterion(y_pred, y_true)
+
+    #y_pred = output
+    loss_val = criterion(output, y_true)
+    print(output[:5], y_pred[:5], y_true[:5])
 
     with torch.no_grad():
         rmse, mape, r2, mae = evaluation(y_pred, y_true)
@@ -184,11 +192,12 @@ node_embedding, output, y_true = model.get_embedding(datelist[-1])
 
 norm = np.array([norm_dict[x] for x in nodes[datelist[-1]]])  # [0]: mu, [1]: sigma
 y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-             + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)
+            + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device) #
 
+#y_pred = output
 loss_test = criterion(y_pred, y_true)
 
-print(output[:10], y_pred[:10], y_true[:10])
+print(output[:5], y_pred[:5], y_true[:5])
 
 with torch.no_grad():
     rmse, mape, r2, mae = evaluation(y_pred, y_true)

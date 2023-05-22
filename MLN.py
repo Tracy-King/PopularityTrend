@@ -76,7 +76,9 @@ class MLN(torch.nn.Module):
 
         # build symmetric adjacency matrix
         adj_v = adj_v + adj_v.T.multiply(adj_v.T > adj_v) - adj_v.multiply(adj_v.T > adj_v)
+        #print(adj_v)
         adj_v = self.normalize(adj_v + sp.eye(adj_v.shape[0]))
+        #print(adj_v)
 
         adj_p = adj_p + adj_p.T.multiply(adj_p.T > adj_p) - adj_p.multiply(adj_p.T > adj_p)
         adj_p = self.normalize(adj_p + sp.eye(adj_p.shape[0]))
@@ -113,7 +115,7 @@ class MLN(torch.nn.Module):
 
         mask = hidden_embedding_v == 0
 
-
+        '''
         # Straight
         node_embedding = torch.from_numpy(self.hidden_embedding).to(self.device) + hidden_embedding_f + \
                          torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
@@ -128,17 +130,19 @@ class MLN(torch.nn.Module):
                                               hidden_embedding,
                                               mask)
 
-        '''
+
 
 
         #y_pred = self.MLP(node_embedding)
         node_idx = [self.nodelist.index(x) for x in channels]
 
         filtered_node_embedding = node_embedding[node_idx]
-        filtered_y_pred = abs(self.MLP(node_embedding[node_idx]))
+
+        filtered_y_pred = self.MLP(node_embedding[node_idx])
         tmp = self.labels.query('date == @date')
         filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['target'].values
                                                  for x in channels])).to(self.device)
+
 
         #self.node_embedding_dict[date] = filtered_node_embedding
         #self.y_pred_dict[date] = filtered_y_pred

@@ -19,8 +19,11 @@ pd.set_option('display.max_columns', None)
 def DF2Adj(nodeList, df):
     tmp = df.reindex(nodeList, axis='columns', fill_value=0.0)
     result = tmp.reindex(nodeList, axis='rows', fill_value=0.0)
+    tmp = result.to_numpy()
+    for i in range(tmp.shape[0]):
+        tmp[i, i] = 0.0
 
-    return sp.csr_matrix(result.to_numpy(), dtype=np.float32)
+    return sp.csr_matrix(tmp, dtype=np.float32)
 
 def DF2Adj_nodeFeature(nodeList, node_feature_df, date):
     df = node_feature_df.query('date == @date')

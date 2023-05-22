@@ -87,7 +87,8 @@ class TemporalAttentionLayer(torch.nn.Module):
                                                              kdim=self.key_dim,
                                                              vdim=self.key_dim,
                                                              num_heads=n_head,
-                                                             dropout=dropout)
+                                                             dropout=dropout,
+                                                             batch_first=True)
 
     def forward(self, old_node_embedding, node_embedding, hidden_embedding, mask):
         """
@@ -103,8 +104,8 @@ class TemporalAttentionLayer(torch.nn.Module):
     attn_output_weights: [batch_size, 1, n_neighbors]
     """
 
-        query = hidden_embedding
-        key = node_embedding
+        query = hidden_embedding.unsqueeze(0)
+        key = node_embedding.unsqueeze(0)
         #print(mask.shape)
         # print(neighbors_features.shape, edge_features.shape, neighbors_time_features.shape)
         # Reshape tensors so to expected shape by multi head attention
@@ -112,7 +113,7 @@ class TemporalAttentionLayer(torch.nn.Module):
         # key = key.permute([1, 0, 2])  # [n_neighbors, batch_size, num_of_features]
 
         # Compute mask of which source nodes have no valid neighbors
-        invalid_mask = mask.all(dim=1)
+        invalid_mask = mask.all(dim=1).unsqueeze(0)
         # If a source node has no valid neighbor, set it's first neighbor to be valid. This will
         # force the attention to just 'attend' on this neighbor (which has the same features as all
         # the others since they are fake neighbors) and will produce an equivalent result to the
@@ -121,8 +122,8 @@ class TemporalAttentionLayer(torch.nn.Module):
 
         #print(query.shape, key.shape, invalid_mask.shape)
 
-        attn_output, _ = self.multi_head_target(query=hidden_embedding, key=node_embedding, value=node_embedding,
-                                                key_padding_mask=mask.all(dim=1))
+        attn_output, _ = self.multi_head_target(query=query, key=key, value=key,
+                                                key_padding_mask=invalid_mask)
 
         attn_output = attn_output.squeeze()
 
