@@ -332,7 +332,8 @@ if __name__ == "__main__":
                 #df = duplicated_viewers(df_group.get_group(date))
                 #df.to_csv('overlap_viewers_{}-{}.csv'.format(f[6:13], i))
         else:
-            chat['period'] = pd.to_datetime(chat['timestamp']).dt.to_period(PERIOD)
+            chat['period'] = pd.to_datetime(chat['timestamp'])
+            chat['period'] = chat['period'].dt.to_period(PERIOD)
             date = chat['period'].drop_duplicates().tolist()[0]
             df, df_hrs = duplicated_period(chat, date)
             #df.to_csv('overlap_period_{}.csv'.format(f[6:13]))
