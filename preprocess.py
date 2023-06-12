@@ -203,7 +203,7 @@ def duplicated_period(df, date):
     for k, v in period_dict.items():
         data.append([date, k, len(v)])
 
-    df_hrs = pd.DataFrame(data, columns=['date', 'channelId', 'hrs'])
+    df_hrs = pd.DataFrame(data, columns=['date', 'channelId', 'hrs'], index=False)
     print(df_hrs.info(), df_hrs.head(5))
 
     #sns.heatmap(df_overlap, annot=True)
@@ -317,6 +317,7 @@ if __name__ == "__main__":
         #chat = pd.read_parquet('chats_{}.parquet'.format('2021-04'))
         chat = pd.read_parquet(f)
 
+
         if PERIOD == 'w':
             chat['period'] = pd.to_datetime(chat['timestamp'])
             chat['period'] = chat['period'].dt.to_period(PERIOD)
@@ -331,11 +332,11 @@ if __name__ == "__main__":
                 #df = duplicated_viewers(df_group.get_group(date))
                 #df.to_csv('overlap_viewers_{}-{}.csv'.format(f[6:13], i))
         else:
-            chat['period'] = pd.to_datetime(chat['timestamp'])
+            chat['period'] = pd.to_datetime(chat['timestamp']).dt.to_period(PERIOD)
             date = chat['period'].drop_duplicates().tolist()[0]
             df, df_hrs = duplicated_period(chat, date)
             #df.to_csv('overlap_period_{}.csv'.format(f[6:13]))
-            df_hrs.to_csv('hrs_{}-{}.csv'.format(f[6:13], i))
+            df_hrs.to_csv('hrs_{}-{}.csv'.format(f[6:13]))
             #df = duplicated_viewers(chat)
             #df.to_csv('overlap_viewers_{}.csv'.format(f[6:13]))
 
