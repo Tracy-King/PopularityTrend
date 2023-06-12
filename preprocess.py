@@ -166,7 +166,7 @@ def duplicated_period(df, date):
     period_dict = dict()
     for i in tqdm(range(len(channelId))):
         bucket = df.loc[df['channelId'] == channelId[i]] ## 计算每个channel的直播区间并加到dict里
-        ts = pd.to_datetime(bucket['timestamp'])
+        ts = pd.to_datetime(bucket['timestamp'], format='ISO8601')
         ts.sort_index(inplace=False)
         ts = ts.dt.to_period('h')
         tsList = ts.drop_duplicates().tolist()
@@ -319,7 +319,7 @@ if __name__ == "__main__":
 
 
         if PERIOD == 'w':
-            chat['period'] = pd.to_datetime(chat['timestamp'])
+            chat['period'] = pd.to_datetime(chat['timestamp'], format='ISO8601')
             chat['period'] = chat['period'].dt.to_period(PERIOD)
             df_group = chat.groupby(['period'])
             dateList = chat['period'].drop_duplicates().tolist()
@@ -332,7 +332,7 @@ if __name__ == "__main__":
                 #df = duplicated_viewers(df_group.get_group(date))
                 #df.to_csv('overlap_viewers_{}-{}.csv'.format(f[6:13], i))
         else:
-            chat['period'] = pd.to_datetime(chat['timestamp'])
+            chat['period'] = pd.to_datetime(chat['timestamp'], format='ISO8601')
             chat['period'] = chat['period'].dt.to_period(PERIOD)
             date = chat['period'].drop_duplicates().tolist()[0]
             df, df_hrs = duplicated_period(chat, date)

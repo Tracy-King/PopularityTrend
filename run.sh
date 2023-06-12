@@ -1,11 +1,12 @@
 #!/bin/bash
 
-#$-l rt_=C.small
+#$-l rt_C.large=1
 #$-l h_rt=12:00:00
 #$-j y
 #$-cwd
 
+source /etc/profile.d/modules.sh
 source ~/youtuber_venv/bin/activate
-module load gcc/9.3.0 python/3.8/3.8.13 cuda/11.1/11.1.1 cudnn/8.2/8.2.4
+module load gcc/12.2.0 python/3.10/3.10.10 cuda/12.1/12.1.1 cudnn/8.9/8.9.1
 
-python3 test.py --period d
+python3 preprocess.py --period w --year 2021
