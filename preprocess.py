@@ -203,7 +203,7 @@ def duplicated_period(df, date):
     for k, v in period_dict.items():
         data.append([date, k, len(v)])
 
-    df_hrs = pd.DataFrame(data, columns=['date', 'channelId', 'hrs'], index=False)
+    df_hrs = pd.DataFrame(data, columns=['date', 'channelId', 'hrs'], index=['date'])
     print(df_hrs.info(), df_hrs.head(5))
 
     #sns.heatmap(df_overlap, annot=True)
