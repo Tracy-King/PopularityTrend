@@ -22,9 +22,9 @@ parser.add_argument('--epochs', type=int, default=10,
                     help='Number of epochs to train.')          # straight_5_18  attn_3_29
 parser.add_argument('--prefix', type=str, default='straight_5_18', help='Prefix to name the checkpoints')
 parser.add_argument('--coldstart', type=int, default=8, help='Number of data for pretraining')
-parser.add_argument('--lr', type=float, default=0.01,
+parser.add_argument('--lr', type=float, default=0.001,
                     help='Initial learning rate.')
-parser.add_argument('--weight_decay', type=float, default=1e-1,
+parser.add_argument('--weight_decay', type=float, default=1e-3,
                     help='Weight decay (L2 loss on parameters).')
 parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping')
 parser.add_argument('--hidden', type=int, default=128,
@@ -33,6 +33,8 @@ parser.add_argument('--dropout', type=float, default=0.2,
                     help='Dropout rate (1 - keep probability).')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
+parser.add_argument('--perf', action='store_true', default=True,
+                    help='Percentage label.')
 
 try:
     args = parser.parse_args()
@@ -95,7 +97,7 @@ if 0 >= COLDSTART or COLDSTART >= len(datelist):
     sys.exit(0)
 
 model = MLN(datelist, node_feature, adj_viewer, adj_period, adj_description,
-            labels, nodes, nodelist, args.hidden, device, args.dropout)
+            labels, nodes, nodelist, args.hidden, device, args.dropout, args.perf)
 model = model.to(device)
 
 logger.debug("Num of dates: {}".format(len(datelist)))
@@ -128,12 +130,12 @@ for epoch in range(args.epochs):
 
         node_embedding, output, y_true = model.get_embedding(datelist[k])
 
-        norm = np.array([norm_dict[x] for x in nodes[datelist[k]]])  # [0]: mu, [1]: sigma
-        y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-                 + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)  #
+        #norm = np.array([norm_dict[x] for x in nodes[datelist[k]]])  # [0]: mu, [1]: sigma
+        #y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
+        #         + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)  #
 
 
-        #y_pred = output
+        y_pred = output
         #print(output[:10], y_pred[:10], y_true[:10])
 
         #print(y_pred.dtype, y_true.dtype)
@@ -155,11 +157,11 @@ for epoch in range(args.epochs):
 
 
     norm = np.array([norm_dict[x] for x in nodes[datelist[-2]]])  # [0]: mu, [1]: sigma
-    y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-             + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)  #
+    #y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
+    #         + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)  #
 
 
-    #y_pred = output
+    y_pred = output
     loss_val = criterion(output, y_true)
     print(output[:5], y_pred[:5], y_true[:5])
 
@@ -191,10 +193,10 @@ model.eval()
 node_embedding, output, y_true = model.get_embedding(datelist[-1])
 
 norm = np.array([norm_dict[x] for x in nodes[datelist[-1]]])  # [0]: mu, [1]: sigma
-y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-            + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device) #
+#y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
+#            + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device) #
 
-#y_pred = output
+y_pred = output
 loss_test = criterion(y_pred, y_true)
 
 print(output[:5], y_pred[:5], y_true[:5])

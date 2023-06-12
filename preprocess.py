@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser('TGN self-supervised training')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
 parser.add_argument('--period', type=str, default="m", choices=[
   "d", "w", "m"], help='Period of data separation(day, week, month)')
-parser.add_argument('--year', type=str, default="2022", choices=["2021", "2022"],
+parser.add_argument('--year', type=str, default="2021", choices=["2021", "2022"],
                     help='Period of data separation(day, week, month)')
 
 try:
@@ -159,7 +159,7 @@ def duplicated_viewers(df):
 
 
 
-def duplicated_period(df):
+def duplicated_period(df, date):
     channelId = df['channelId'].unique().tolist()
     df_overlap = pd.DataFrame(columns=channelId)
     value = []
@@ -173,7 +173,7 @@ def duplicated_period(df):
         #print(tsList)       ## 该channel的直播区间（yyyy-mm-dd hh）
         period_dict[channelId[i]] = tsList
 
-
+    '''
     for i in tqdm(range(len(channelId))):
         this_column = df_overlap.columns[i]
         Left = channelId[i]
@@ -198,11 +198,16 @@ def duplicated_period(df):
         # print("column "+ str(i+1) + " from all " + str(len(englishName)) +" is done")
     df_overlap.index = channelId
     #fig, ax = plt.subplots(figsize=(32, 32))
+    '''
+    data = []
+    for k, v in period_dict.items():
+        data.append([date, k, len(v)])
 
-
+    df_hrs = pd.DataFrame(data, columns=['date', 'channelId', 'hrs'])
+    print(df_hrs.info(), df_hrs.head(5))
 
     #sns.heatmap(df_overlap, annot=True)
-    return df_overlap
+    return df_overlap, df_hrs
 
 
 def duplicated_description():
@@ -258,6 +263,7 @@ def target(date_concat, p, label_concat):
         return target, node_features
 
 
+
     if p == 'm':
         df = pd.concat([
             pd.read_csv('results/result_{}_{}.csv'.format(p, date), index_col=0)
@@ -284,10 +290,12 @@ def target(date_concat, p, label_concat):
     df['target'] = df.groupby(['channelId'])['totalSC'].shift(-1)
     #nodelist = df['channelId'].unique()
     df = df.query('target == target')
+    df['perf'] = df['target'] / df['totalSC']
 
 
-    target = df[['date', 'channelId', 'target']]
-    node_features = df.drop(['target'], axis=1)
+    target = df[['date', 'channelId', 'target', 'perf']]
+
+    node_features = df.drop(['target', 'perf'], axis=1)
     '''
     for date in date_concat:
         tmp_df = node_features.query('date == @date')
@@ -302,8 +310,8 @@ def target(date_concat, p, label_concat):
 
 
 if __name__ == "__main__":
-    '''
-    for f in glob.glob('chats_{}-*.parquet'.format(YEAR)):
+
+    for f in glob.glob('parquets/chats_{}-*.parquet'.format(YEAR)):
         print(f)
 
         #chat = pd.read_parquet('chats_{}.parquet'.format('2021-04'))
@@ -317,15 +325,19 @@ if __name__ == "__main__":
             for i in range(len(dateList)):
                 print(dateList[i])
                 date = dateList[i]
-                df = duplicated_period(df_group.get_group(date))
-                df.to_csv('overlap_period_{}-{}.csv'.format(f[6:13], i))
-                df = duplicated_viewers(df_group.get_group(date))
-                df.to_csv('overlap_viewers_{}-{}.csv'.format(f[6:13], i))
+                df, df_hrs = duplicated_period(df_group.get_group(date), date)
+                #df.to_csv('overlap_period_{}-{}.csv'.format(f[6:13], i))
+                df_hrs.to_csv('hrs_{}-{}.csv'.format(f[6:13], i))
+                #df = duplicated_viewers(df_group.get_group(date))
+                #df.to_csv('overlap_viewers_{}-{}.csv'.format(f[6:13], i))
         else:
-            df = duplicated_period(chat)
-            df.to_csv('overlap_period_{}.csv'.format(f[6:13]))
-            df = duplicated_viewers(chat)
-            df.to_csv('overlap_viewers_{}.csv'.format(f[6:13]))
-    '''
-    df = duplicated_description()
-    df.to_csv('overlap_description.csv')
+            chat['period'] = pd.to_datetime(chat['timestamp'])
+            date = chat['period'].drop_duplicates().tolist()[0]
+            df, df_hrs = duplicated_period(chat, date)
+            #df.to_csv('overlap_period_{}.csv'.format(f[6:13]))
+            df_hrs.to_csv('hrs_{}-{}.csv'.format(f[6:13], i))
+            #df = duplicated_viewers(chat)
+            #df.to_csv('overlap_viewers_{}.csv'.format(f[6:13]))
+
+    #df = duplicated_description()
+    #df.to_csv('overlap_description.csv')

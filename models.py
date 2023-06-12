@@ -22,7 +22,7 @@ class GCN(nn.Module):
 class MLP(nn.Module):
     def __init__(self, dim, drop=0.3):
         super().__init__()
-        self.fc_1 = nn.Linear(dim, 1)
+        self.fc_1 = nn.Linear(dim, 64)
         self.fc_3 = nn.Linear(64, 1)
         nn.init.xavier_normal_(self.fc_1.weight, gain=1.0)
         nn.init.normal_(self.fc_3.weight)
@@ -32,9 +32,9 @@ class MLP(nn.Module):
         self.dropout = nn.Dropout(p=drop, inplace=False)
 
     def forward(self, x):
-        x = self.bn_3(self.fc_1(x))
-        #x = self.dropout(x)
-        #x = self.act(self.fc_3(x))
+        x = self.bn_1(self.act(self.fc_1(x)))
+        x = self.dropout(x)
+        x = self.bn_3(self.act(self.fc_3(x)))
         return x
 
 

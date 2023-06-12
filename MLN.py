@@ -8,7 +8,7 @@ from layers import TemporalAttentionLayer
 
 class MLN(torch.nn.Module):
     def __init__(self, datelist, node_feature, adj_viewer, adj_period, adj_description,
-                 labels, nodes, nodelist, hidden_dim, device, dropout=0.2):
+                 labels, nodes, nodelist, hidden_dim, device, dropout=0.2, perf=False):
         super(MLN, self).__init__()
         self.datelist = datelist
         self.node_feature = node_feature
@@ -20,9 +20,10 @@ class MLN(torch.nn.Module):
         self.nodelist = nodelist
         self.dropout = dropout
         self.hidden = hidden_dim
-        self.feature_dim = 10  #17
+        self.feature_dim = 10  #10 or 17
         self.n_nodes = len(self.nodelist)
         self.device = device
+        self.perf = perf
 
         #self.node_embedding_dict = dict()
         #self.y_pred_dict = dict()
@@ -92,18 +93,16 @@ class MLN(torch.nn.Module):
         target['map'] = target['channelId'].map(sort_map['index'])
         target.sort_values('map')
 
-        y_true = target['target'].to_numpy()
-
         features = self.sparse_mx_to_torch_sparse_tensor(features).to(self.device)
-        y_true = torch.LongTensor(y_true).to(self.device)
+
         adj_v = self.sparse_mx_to_torch_sparse_tensor(adj_v).to(self.device)
         adj_p = self.sparse_mx_to_torch_sparse_tensor(adj_p).to(self.device)
         adj_d = torch.FloatTensor(adj_d).to(self.device)
 
-        return adj_v, adj_p, adj_d, features, y_true, channels
+        return adj_v, adj_p, adj_d, features, channels
 
     def get_embedding(self, date):
-        adj_v, adj_p, adj_d, features, y_true, channels = self.loadData(date)
+        adj_v, adj_p, adj_d, features, channels = self.loadData(date)
 
         hidden_embedding_v, c_v = self.rnn_v(self.model_v(features, adj_v),
                                             torch.from_numpy(self.last_hidden_v).to(self.device),
@@ -140,8 +139,12 @@ class MLN(torch.nn.Module):
 
         filtered_y_pred = self.MLP(node_embedding[node_idx])
         tmp = self.labels.query('date == @date')
-        filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['target'].values
+        if not self.perf:
+            filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['target'].values
                                                  for x in channels])).to(self.device)
+        else:
+            filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['perf'].values
+                                                         for x in channels])).to(self.device)
 
 
         #self.node_embedding_dict[date] = filtered_node_embedding
