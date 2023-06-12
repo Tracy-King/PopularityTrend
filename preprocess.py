@@ -10,7 +10,7 @@ import os
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
-parser.add_argument('--period', type=str, default="m", choices=[
+parser.add_argument('--period', type=str, default="w", choices=[
   "d", "w", "m"], help='Period of data separation(day, week, month)')
 parser.add_argument('--year', type=str, default="2021", choices=["2021", "2022"],
                     help='Period of data separation(day, week, month)')
@@ -203,7 +203,7 @@ def duplicated_period(df, date):
     for k, v in period_dict.items():
         data.append([date, k, len(v)])
 
-    df_hrs = pd.DataFrame(data, columns=['date', 'channelId', 'hrs'], index=['date'])
+    df_hrs = pd.DataFrame(data, columns=['date', 'channelId', 'hrs'])
     print(df_hrs.info(), df_hrs.head(5))
 
     #sns.heatmap(df_overlap, annot=True)
@@ -328,7 +328,7 @@ if __name__ == "__main__":
                 date = dateList[i]
                 df, df_hrs = duplicated_period(df_group.get_group(date), date)
                 #df.to_csv('overlap_period_{}-{}.csv'.format(f[6:13], i))
-                df_hrs.to_csv('hrs_{}-{}.csv'.format(f[6:13], i))
+                df_hrs.to_csv('hrs_{}-{}.csv'.format(f[15:22], i))
                 #df = duplicated_viewers(df_group.get_group(date))
                 #df.to_csv('overlap_viewers_{}-{}.csv'.format(f[6:13], i))
         else:
@@ -337,7 +337,7 @@ if __name__ == "__main__":
             date = chat['period'].drop_duplicates().tolist()[0]
             df, df_hrs = duplicated_period(chat, date)
             #df.to_csv('overlap_period_{}.csv'.format(f[6:13]))
-            df_hrs.to_csv('hrs_{}-{}.csv'.format(f[6:13]))
+            df_hrs.to_csv('hrs_{}-{}.csv'.format(f[15:22]))
             #df = duplicated_viewers(chat)
             #df.to_csv('overlap_viewers_{}.csv'.format(f[6:13]))
 
