@@ -20,7 +20,7 @@ class MLN(torch.nn.Module):
         self.nodelist = nodelist
         self.dropout = dropout
         self.hidden = hidden_dim
-        self.feature_dim = 10  #10 or 17
+        self.feature_dim = 19  #10 or 17
         self.n_nodes = len(self.nodelist)
         self.device = device
         self.perf = perf

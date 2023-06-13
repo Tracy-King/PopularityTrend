@@ -89,8 +89,8 @@ datelist, node_feature, adj_viewer, adj_period, adj_description, labels, nodes, 
 #datelist = datelist[:-5]
 
 #cs_list = datelist[:COLDSTART]
-norm_dict = get_norm(labels, datelist[:COLDSTART], nodelist)
-#norm_mu, norm_sigma = get_norm(labels, datelist[:COLDSTART], nodelist)
+norm_dict = get_norm(labels, datelist[:COLDSTART], nodelist, args.perf)
+#norm_mu, norm_sigma = get_norm(labels, datelist[:COLDSTART], nodelist, args.perf)
 
 if 0 >= COLDSTART or COLDSTART >= len(datelist):
     logger.error('Invalid COLDSTART')
@@ -109,7 +109,7 @@ early_stopper = EarlyStopMonitor(max_round=args.patience)
 
 params = list(model.parameters())
 optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
-criterion = torch.nn.SmoothL1Loss()#torch.nn.MSELoss()
+criterion = torch.nn.MSELoss()
 
 
 early_stopper = EarlyStopMonitor(max_round=args.patience, higher_better=False)
@@ -130,20 +130,21 @@ for epoch in range(args.epochs):
 
         node_embedding, output, y_true = model.get_embedding(datelist[k])
 
-        #norm = np.array([norm_dict[x] for x in nodes[datelist[k]]])  # [0]: mu, [1]: sigma
-        #y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-        #         + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)  #
+        norm = np.array([norm_dict[x] for x in nodes[datelist[k]]])  # [0]: mu, [1]: sigma
+        y_true_n = (y_true - torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)) /\
+                   torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device)
 
 
         y_pred = output
+        print(output[:5], y_true_n[:5], y_true[:5])
         #print(output[:10], y_pred[:10], y_true[:10])
 
         #print(y_pred.dtype, y_true.dtype)
-        loss_train = criterion(y_pred.to(torch.float32), y_true.to(torch.float32))
+        loss_train = criterion(y_pred.to(torch.float32), y_true_n.to(torch.float32))
         loss += loss_train
         if k >= COLDSTART:
             with torch.no_grad():
-                rmse, mape, r2, mae = evaluation(y_pred, y_true)
+                rmse, mape, r2, mae = evaluation(y_pred, y_true_n)
             logger.info('Date: {}'.format(datelist[k]))
             logger.info('Loss: {:.4f}'.format(loss_train.item()))
             logger.info('RMSE: {:.4f}, MAPE: {:.4f}, R2_score: {:.4f}, MAE: {:.4f}'.format(rmse, mape, r2, mae))
@@ -157,16 +158,16 @@ for epoch in range(args.epochs):
 
 
     norm = np.array([norm_dict[x] for x in nodes[datelist[-2]]])  # [0]: mu, [1]: sigma
-    #y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-    #         + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)  #
+    y_true_n = (y_true - torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)) / \
+               torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device)
 
 
     y_pred = output
-    loss_val = criterion(output, y_true)
-    print(output[:5], y_pred[:5], y_true[:5])
+    loss_val = criterion(output, y_true_n)
+    print(output[:5], y_true_n[:5], y_true[:5])
 
     with torch.no_grad():
-        rmse, mape, r2, mae = evaluation(y_pred, y_true)
+        rmse, mape, r2, mae = evaluation(y_pred, y_true_n)
     logger.info('Validation-----------------'.format(datelist[-2]))
     logger.info('Date: {}'.format(datelist[-2]))
     logger.info('Loss: {:.4f}'.format(loss_val.item()))
@@ -193,16 +194,16 @@ model.eval()
 node_embedding, output, y_true = model.get_embedding(datelist[-1])
 
 norm = np.array([norm_dict[x] for x in nodes[datelist[-1]]])  # [0]: mu, [1]: sigma
-#y_pred = output * torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device) \
-#            + torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device) #
+y_true_n = (y_true - torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)) /\
+                   torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device)
 
 y_pred = output
-loss_test = criterion(y_pred, y_true)
+loss_test = criterion(y_pred, y_true_n)
 
-print(output[:5], y_pred[:5], y_true[:5])
+print(output[:5], y_true_n[:5], y_true[:5])
 
 with torch.no_grad():
-    rmse, mape, r2, mae = evaluation(y_pred, y_true)
+    rmse, mape, r2, mae = evaluation(y_pred, y_true_n)
 logger.info('Test-----------------'.format(datelist[-1]))
 logger.info('Date: {}'.format(datelist[-1]))
 logger.info('Loss: {:.4f}'.format(loss_val.item()))

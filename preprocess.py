@@ -268,18 +268,26 @@ def target(date_concat, p, label_concat):
         df = pd.concat([
             pd.read_csv('results/result_{}_{}.csv'.format(p, date), index_col=0)
             for date in label_concat], ignore_index=True)
+        hrs = pd.concat([
+            pd.read_csv('hrs/hrs_{}.csv'.format(date), index_col=0)
+            for date in label_concat], ignore_index=True)
+        df = pd.merge(df, hrs, how='left', on=['channelId', 'date'])
 
     elif p =='w':
         c_list = []
         for date in label_concat:
             tmp = pd.read_csv('results/result_{}_{}.csv'.format(p, date), index_col=0)
+            hrs = pd.concat([pd.read_csv(h, index_col=0)
+                             for h in glob.glob('hrs/hrs_{}-*.csv'.format(date))], ignore_index=True)
+            tmp = pd.merge(tmp, hrs, how='left', on=['channelId', 'date'])
+
             dates = tmp['date'].drop_duplicates().tolist()
             filenames = [date+'-{}'.format(i) for i in range(len(dates))]
 
             sort_map = pd.DataFrame({'date': dates, 'filename': filenames}).reset_index().set_index('date')
             tmp['filename'] = tmp['date'].map(sort_map['filename'])
-            df = df.drop(['date'], axis=1)
-            df = df.rename(columns={'filename': 'date'})
+            tmp = tmp.drop(['date'], axis=1)
+            tmp = tmp.rename(columns={'filename': 'date'})
             #print(sort_map)
             #print(tmp.head(5))
             c_list.append(tmp)
@@ -291,6 +299,15 @@ def target(date_concat, p, label_concat):
     #nodelist = df['channelId'].unique()
     df = df.query('target == target')
     df['perf'] = df['target'] / df['totalSC']
+
+    df['chatsPerHrs'] = df['chats'] / df['hrs']
+    df['memberChatsPerHrs'] = df['memberChats'] / df['hrs']
+    df['uniqueChattersPerHrs'] = df['uniqueChatters'] / df['hrs']
+    df['uniqueMembersPerHrs'] = df['uniqueMembers'] / df['hrs']
+    df['superChatsPerHrs'] = df['superChats'] / df['hrs']
+    df['uniqueSuperChattersPerHrs'] = df['uniqueSuperChatters'] / df['hrs']
+    df['totalSCPerHrs'] = df['totalSC'] / df['hrs']
+    df['totalLengthPerHrs'] = df['totalLength'] / df['hrs']
 
 
     target = df[['date', 'channelId', 'target', 'perf']]

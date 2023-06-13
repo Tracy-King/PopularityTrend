@@ -6,15 +6,21 @@ import math
 
 
 
-def get_norm(labels, datelist, nodelist):
-    avg_norm = labels.query('date in @datelist & channelId in @nodelist')['target'].to_numpy()
+def get_norm(labels, datelist, nodelist, perf):
+    if perf:
+        avg_norm = labels.query('date in @datelist & channelId in @nodelist')['perf'].to_numpy()
+    else:
+        avg_norm = labels.query('date in @datelist & channelId in @nodelist')['target'].to_numpy()
     avg_norm_mu = np.mean(avg_norm, axis=0)
     avg_norm_sigma = np.std(avg_norm, axis=0)
     #norm_df = labels.query('date in @datelist')['target']
 
     norm_dict = dict()
     for node in nodelist:
-        norm = labels.query('date in @datelist & channelId == @node')['target'].to_numpy()
+        if perf:
+            norm = labels.query('date in @datelist & channelId == @node')['perf'].to_numpy()
+        else:
+            norm = labels.query('date in @datelist & channelId == @node')['target'].to_numpy()
         if norm.shape[0] != 0:
             norm_mu = np.mean(norm, axis=0)
             norm_sigma = np.std(norm, axis=0)
