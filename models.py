@@ -23,13 +23,13 @@ class MLP(nn.Module):
     def __init__(self, dim, drop=0.3):
         super().__init__()
         self.fc_1 = nn.Linear(dim, 64)
-        self.fc_2 = nn.Linear(64, 10)
-        self.fc_3 = nn.Linear(10, 1)
+       # self.fc_2 = nn.Linear(64, 10)
+        self.fc_3 = nn.Linear(64, 1)
         nn.init.xavier_normal_(self.fc_1.weight, gain=1.0)
-        nn.init.xavier_normal_(self.fc_2.weight, gain=1.0)
+        #nn.init.xavier_normal_(self.fc_2.weight, gain=1.0)
         nn.init.xavier_normal_(self.fc_3.weight, gain=1.0)
         self.bn_1 = nn.BatchNorm1d(64)
-        self.bn_2 = nn.BatchNorm1d(10)
+        #self.bn_2 = nn.BatchNorm1d(10)
         self.bn_3 = nn.BatchNorm1d(1)
         self.act = nn.ReLU()
         self.dropout = nn.Dropout(p=drop, inplace=False)
@@ -37,10 +37,39 @@ class MLP(nn.Module):
     def forward(self, x):
         x = self.bn_1(self.act(self.fc_1(x)))
         x = self.dropout(x)
-        x = self.bn_2(self.act(self.fc_2(x)))
-        x = self.dropout(x)
-        x = self.bn_3(self.act(self.fc_3(x)))
+        #x = self.bn_2(self.act(self.fc_2(x)))
+        #x = self.dropout(x)
+        x = self.fc_3(x)
         return x
+
+class GSL(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.dim = dim
+        params = torch.ones([self.dim, self.dim])
+        nn.init.normal(params)
+        self.weight = nn.Parameter(params, requires_grad=True)
+
+
+    def forward(self, feature):
+        n_nodes = feature.shape[0]
+        #print(n_nodes, feature.shape, self.weight.shape)
+        x = torch.zeros(n_nodes, n_nodes)
+        #print(x.shape)
+        for i in range(n_nodes):
+            for j in range(n_nodes):
+                tmp = torch.unsqueeze((feature[i, :] - feature[j, :]), 0)
+                #print(tmp.shape)
+                tmp = torch.mm(tmp, self.weight)
+                tmp = tmp.mm(tmp.T)
+                #print(tmp.shape)
+                x[i, j] = torch.sqrt(tmp)
+
+        sigma = torch.std(x)
+        x = torch.exp(-x / 2*sigma.pow(2))
+        adj = nn.functional.normalize(x.view(1, -1), p=2.0, dim=1, eps=1e-12, out=None).view(n_nodes, n_nodes)
+        return adj.to_sparse()
+
 
 
 class LSTMNet(nn.Module):

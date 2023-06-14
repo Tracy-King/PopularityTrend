@@ -7,6 +7,7 @@ from datetime import datetime
 import argparse
 from tqdm import tqdm
 import sys
+import torch
 
 
 pd.set_option('display.max_columns', None)
@@ -156,15 +157,19 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    df = pd.read_csv('Vtuber1B_elements\chat_stats.csv')
+    #df = pd.read_csv('Vtuber1B_elements\chat_stats.csv')
     #df = pd.read_csv('overlap_period.csv')
     #print(df)
-    print(df.info())
-    tmp = df.query('period == "2021-03" | period == "2021-04"')
-    print(tmp.info())
+    #print(df.info())
+    #tmp = df.query('period == "2021-03" | period == "2021-04"')
+    #print(tmp.info())
 
 
-    print(tmp['chats'].sum())
+    #print(tmp['chats'].sum())
 
 
-
+    x = torch.arange(0, 9.0).view(3, 3)
+    print(x)
+    n_nodes = 3
+    adj = torch.nn.functional.normalize(x.view(1, -1), p=2.0, dim=1, eps=1e-12, out=None).view(n_nodes, n_nodes)
+    print(adj)

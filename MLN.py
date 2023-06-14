@@ -2,13 +2,13 @@ import pandas as pd
 import numpy as np
 import torch
 import scipy.sparse as sp
-from models import GCN, LSTMNet, Linear, MLP
+from models import GCN, LSTMNet, Linear, MLP, GSL
 from layers import TemporalAttentionLayer
 
 
 class MLN(torch.nn.Module):
     def __init__(self, datelist, node_feature, adj_viewer, adj_period, adj_description,
-                 labels, nodes, nodelist, hidden_dim, device, dropout=0.2, perf=False):
+                 labels, nodes, nodelist, hidden_dim, device, dropout=0.2, perf=False, gsl=False, alpha=1.0):
         super(MLN, self).__init__()
         self.datelist = datelist
         self.node_feature = node_feature
@@ -24,6 +24,8 @@ class MLN(torch.nn.Module):
         self.n_nodes = len(self.nodelist)
         self.device = device
         self.perf = perf
+        self.gsl = gsl
+        self.alpha = alpha
 
         #self.node_embedding_dict = dict()
         #self.y_pred_dict = dict()
@@ -41,6 +43,8 @@ class MLN(torch.nn.Module):
         self.rnn_p = LSTMNet(self.hidden, self.hidden, dropout=self.dropout)
         self.linear = Linear(self.feature_dim, self.hidden, dropout=self.dropout)
         self.MLP = MLP(self.hidden, self.dropout)
+        if self.gsl:
+            self.GSL = GSL(self.feature_dim)
         self.attention_model = TemporalAttentionLayer(
             n_node_embedding=self.hidden,
             n_node_old_embedding=self.hidden,
@@ -99,15 +103,33 @@ class MLN(torch.nn.Module):
         adj_p = self.sparse_mx_to_torch_sparse_tensor(adj_p).to(self.device)
         adj_d = torch.FloatTensor(adj_d).to(self.device)
 
+
+
         return adj_v, adj_p, adj_d, features, channels
 
     def get_embedding(self, date):
-        adj_v, adj_p, adj_d, features, channels = self.loadData(date)
+        adj_v_ori, adj_p_ori, adj_d, features, channels = self.loadData(date)
 
-        hidden_embedding_v, c_v = self.rnn_v(self.model_v(features, adj_v),
+        if self.gsl:
+            adj_f = self.GSL(features.to_dense())
+            adj_f = adj_f + adj_f.T.multiply(adj_f.T > adj_f) - adj_f.multiply(adj_f.T > adj_f)
+            adj_f = self.normalize(adj_f + sp.eye(adj_f.shape[0]))
+
+            adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_f
+            adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_f
+        else:
+            adj_v = adj_v_ori
+            adj_p = adj_p_ori
+
+        z_v = self.model_v(features, adj_v)
+        z_p = self.model_p(features, adj_p)
+
+
+
+        hidden_embedding_v, c_v = self.rnn_v(z_v,
                                             torch.from_numpy(self.last_hidden_v).to(self.device),
                                             torch.from_numpy(self.last_c_v).to(self.device))
-        hidden_embedding_p, c_p = self.rnn_v(self.model_p(features, adj_p),
+        hidden_embedding_p, c_p = self.rnn_v(z_p,
                                             torch.from_numpy(self.last_hidden_p).to(self.device),
                                             torch.from_numpy(self.last_c_p).to(self.device))
         hidden_embedding_f = self.linear(features)
@@ -157,4 +179,5 @@ class MLN(torch.nn.Module):
             self.last_hidden_p = hidden_embedding_p.detach().cpu().numpy()
             self.last_c_v = c_v.detach().cpu().numpy()
             self.last_c_p = c_p.detach().cpu().numpy()
-        return filtered_node_embedding, filtered_y_pred.float(), filtered_y_true.float()
+        return filtered_node_embedding, filtered_y_pred.float(), filtered_y_true.float(),\
+               (adj_v - adj_v_ori).to_dense(), (adj_p - adj_p_ori).to_dense()

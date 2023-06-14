@@ -298,7 +298,7 @@ def target(date_concat, p, label_concat):
     df['target'] = df.groupby(['channelId'])['totalSC'].shift(-1)
     #nodelist = df['channelId'].unique()
     df = df.query('target == target')
-    df['perf'] = df['target'] / df['totalSC']
+    df['perf'] = (df['target'] / df['totalSC']) -1
 
     df['chatsPerHrs'] = df['chats'] / df['hrs']
     df['memberChatsPerHrs'] = df['memberChats'] / df['hrs']
