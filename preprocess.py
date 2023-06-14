@@ -256,12 +256,10 @@ def channelFeatures(df):
     return nodeFeature
 
 def target(date_concat, p, label_concat):
-
     if os.path.isfile('label_{}.csv'.format(p)) and os.path.isfile('node_features_{}.csv'.format(p)):
         target = pd.read_csv('label_{}.csv'.format(p), index_col=0)
         node_features = pd.read_csv('node_features_{}.csv'.format(p), index_col=0)
         return target, node_features
-
 
 
     if p == 'm':

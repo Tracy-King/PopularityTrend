@@ -8,6 +8,7 @@ import argparse
 from tqdm import tqdm
 import sys
 import torch
+import plotly.express as px
 
 
 pd.set_option('display.max_columns', None)
@@ -167,9 +168,11 @@ if __name__ == "__main__":
 
     #print(tmp['chats'].sum())
 
+    p = 'm'
 
-    x = torch.arange(0, 9.0).view(3, 3)
-    print(x)
-    n_nodes = 3
-    adj = torch.nn.functional.normalize(x.view(1, -1), p=2.0, dim=1, eps=1e-12, out=None).view(n_nodes, n_nodes)
-    print(adj)
+
+    target = pd.read_csv('label_{}.csv'.format(p), index_col=0)
+
+    df = target.query('perf < 1.5')
+    fig = px.box(df, y="perf", points="all")
+    fig.show()

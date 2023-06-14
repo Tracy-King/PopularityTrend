@@ -8,6 +8,7 @@ from pathlib import Path
 from readData import readData
 from MLN import MLN
 from utils import EarlyStopMonitor, evaluation, get_norm
+import matplotlib.pyplot as plt
 
 # pd.set_option('display.max_columns', None)
 
@@ -22,9 +23,9 @@ parser.add_argument('--epochs', type=int, default=10,
                     help='Number of epochs to train.')          # straight_5_18  attn_3_29
 parser.add_argument('--prefix', type=str, default='straight_5_18', help='Prefix to name the checkpoints')
 parser.add_argument('--coldstart', type=int, default=8, help='Number of data for pretraining')
-parser.add_argument('--lr', type=float, default=0.01,
+parser.add_argument('--lr', type=float, default=0.001,
                     help='Initial learning rate.')
-parser.add_argument('--weight_decay', type=float, default=1e-1,
+parser.add_argument('--weight_decay', type=float, default=1e-2,
                     help='Weight decay (L2 loss on parameters).')
 parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping')
 parser.add_argument('--hidden', type=int, default=128,
@@ -39,7 +40,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
 parser.add_argument('--perf', action='store_true', default=True,
                     help='Percentage label.')
-parser.add_argument('--gsl', action='store_true', default=True,
+parser.add_argument('--gsl', action='store_true', default=False,
                     help='Using graph structure learning.')
 
 
@@ -187,6 +188,15 @@ for epoch in range(args.epochs):
     logger.info("Optimization Finished!")
     logger.info('Epoch {:04d} time: {:.4f}s'.format(epoch + 1, time.time() - t))
 
+    x = np.arange(y_pred.shape[0])
+    l1 = plt.plot(x, y_pred.detach().cpu().numpy() - y_true.detach().cpu().numpy(), 'r--', label='y_pred')
+    #l1 = plt.plot(x, , 'g--', label='y_true')
+    plt.plot(x, y_pred.detach().cpu().numpy(), 'ro-')
+    plt.xlabel('samples')
+    plt.ylabel('result')
+    plt.legend()
+    plt.show()
+
     if early_stopper.early_stop_check(loss.item()):
         logger.info("No improvement over {} epochs, stop training".format(early_stopper.max_round))
         break
@@ -222,3 +232,12 @@ logger.info('Date: {}'.format(datelist[-1]))
 logger.info('Loss: {:.4f}'.format(loss_val.item()))
 logger.info('RMSE: {:.4f}, MAPE: {:.4f}, R2_score: {:.4f}, MAE: {:.4f}'.format(rmse, mape, r2, mae))
 
+
+x = np.arange(y_pred.shape[0])
+l1 = plt.plot(x, y_pred.detach().cpu().numpy() - y_true.detach().cpu().numpy(), 'r--', label='y_pred')
+#l1 = plt.plot(x, , 'g--', label='y_true')
+plt.plot(x, y_pred.detach().cpu().numpy(), 'ro-')
+plt.xlabel('samples')
+plt.ylabel('result')
+plt.legend()
+plt.show()

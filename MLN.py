@@ -170,6 +170,12 @@ class MLN(torch.nn.Module):
             filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['perf'].values
                                                          for x in channels])).to(self.device)
 
+        valid_mask = (filtered_y_true < 2.0).nonzero()[:, 0]
+
+        #print(valid_mask)
+
+        filtered_y_true = torch.index_select(filtered_y_true, 0, valid_mask)
+        filtered_y_pred = torch.index_select(filtered_y_pred, 0, valid_mask)
 
         #self.node_embedding_dict[date] = filtered_node_embedding
         #self.y_pred_dict[date] = filtered_y_pred
