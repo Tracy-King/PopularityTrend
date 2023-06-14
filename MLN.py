@@ -115,6 +115,8 @@ class MLN(torch.nn.Module):
             adj_f = adj_f + adj_f.T.multiply(adj_f.T > adj_f) - adj_f.multiply(adj_f.T > adj_f)
             adj_f = self.normalize(adj_f + sp.eye(adj_f.shape[0]))
 
+            adj_f = adj_f.to_sparse()
+
             adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_f
             adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_f
         else:

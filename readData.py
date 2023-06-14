@@ -11,7 +11,7 @@ date_concat = ['2021-04', '2021-05', '2021-06', '2021-07', '2021-08', '2021-09',
 '''
 date_concat = ['2021-04']
 
-period = 'm'
+period = 'w'
 
 pd.set_option('display.max_columns', None)
 
