@@ -188,6 +188,7 @@ for epoch in range(args.epochs):
     logger.info("Optimization Finished!")
     logger.info('Epoch {:04d} time: {:.4f}s'.format(epoch + 1, time.time() - t))
 
+    '''
     x = np.arange(y_pred.shape[0])
     l1 = plt.plot(x, y_pred.detach().cpu().numpy() - y_true.detach().cpu().numpy(), 'r--', label='y_pred')
     #l1 = plt.plot(x, , 'g--', label='y_true')
@@ -196,6 +197,7 @@ for epoch in range(args.epochs):
     plt.ylabel('result')
     plt.legend()
     plt.show()
+    '''
 
     if early_stopper.early_stop_check(loss.item()):
         logger.info("No improvement over {} epochs, stop training".format(early_stopper.max_round))

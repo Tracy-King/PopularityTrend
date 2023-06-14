@@ -68,7 +68,7 @@ class GSL(nn.Module):
         sigma = torch.std(x)
         x = torch.exp(-x / 2*sigma.pow(2))
         adj = nn.functional.normalize(x.view(1, -1), p=2.0, dim=1, eps=1e-12, out=None).view(n_nodes, n_nodes)
-        return adj
+        return adj.to_dense()
 
 
 
