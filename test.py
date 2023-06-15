@@ -11,6 +11,10 @@ import torch
 import plotly.express as px
 
 
+import plotly.io as pio
+pio.renderers.default = "browser"
+
+
 pd.set_option('display.max_columns', None)
 
 
@@ -168,11 +172,39 @@ if __name__ == "__main__":
 
     #print(tmp['chats'].sum())
 
-    p = 'm'
+    x= torch.tensor([[1, 2, 3, 3], [4, 5, 6, 6], [7, 8, 9, 9]], dtype=torch.float32)
+    print(x.shape)
+    x = torch.unsqueeze(x, 1)
+    a = x.expand(x.shape[0], x.shape[0], x.shape[2])
+    at = torch.transpose(a, 0, 1)
+    print(a, at)
+    b = a - at
+    print(b)
+    w = torch.ones((4, 4)) / 10.0
+    print(w)
+    c = b.matmul(w)
+    print(c)
+    d = (c*c).sum(2)
+    print(d)
 
+    print(b.shape, w.shape, c.shape, d.shape)
 
-    target = pd.read_csv('label_{}.csv'.format(p), index_col=0)
+    target = pd.read_csv('label_{}.csv'.format('m'), index_col=0)
+    target2 = pd.read_csv('label_{}.csv'.format('w'), index_col=0)
+    target['period'] = 'month'
+    target2['period'] = 'week'
 
-    df = target.query('perf < 1.5')
-    fig = px.box(df, y="perf", points="all")
+    node_feature = pd.read_csv('node_features_{}.csv'.format('m'), index_col=0)
+
+    print(node_feature.info())
+
+    df = pd.concat([target[['perf', 'period', 'target']], target2[['perf', 'period', 'target']]])
+
+    node_feature = node_feature.drop(['date', 'channelId', 'impact1', 'impact2', 'impact3', 'impact4',
+                                      'impact5', 'impact6', 'impact7'], axis=1)
+
+    df = df.query('perf < 2.0')
+    fig = px.box(node_feature, log_y=True)
+    #fig = px.box(df, x='period', y='perf', points='all')
+    fig.update_layout(font_size=30)
     fig.show()

@@ -61,6 +61,8 @@ def evaluation(output, labels):
     #print(norm_sigma, norm_mu)
     #print(output[:10])
     #print(labels[:10])
+    if output.shape[0] == 0:
+        return 0.0, 0.0, 0.0, 0.0
     rmse = math.sqrt(mean_squared_error(output, labels))
     mape = mean_absolute_percentage_error(output, labels)
     r2 = r2_score(output, labels)

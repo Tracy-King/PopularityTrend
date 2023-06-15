@@ -64,7 +64,7 @@ class MLN(torch.nn.Module):
 
     def normalize_tensor(self, mx):
         """Row-normalize sparse matrix"""
-        rowsum = torch.tensor(torch.sum(mx, 1))
+        rowsum = torch.sum(mx, 1).clone().detach()
         r_inv = torch.flatten(torch.pow(rowsum, -1))
         r_inv[torch.isinf(r_inv)] = 0.
         r_mat_inv = torch.diag(r_inv)

@@ -60,7 +60,7 @@ class GSL(nn.Module):
         f = f.expand(f.shape[0], f.shape[0], f.shape[2])
         ft = torch.transpose(f, 0, 1)
         x = (f - ft).matmul(self.weight)
-        x = torch.sqrt((x * x).sum(2))
+        x = torch.sqrt((x * x).sum(2) + 1e-8)
 
         sigma = torch.std(x)
         x = torch.exp(-x / 2*sigma.pow(2))

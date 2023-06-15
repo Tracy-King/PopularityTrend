@@ -56,7 +56,7 @@ def readData(period):
 
     label_concat = [re.findall(r'results\\result_[mwd]_(\d{4}-\d{2}).csv', f)[0]
                        for f in glob.glob('results\\result_{}_*.csv'.format(period))
-                       if re.match(r'results\\result_[mwd]_(\d{4}-\d{2}).csv', f)]
+                       if re.match(r'results\\result_[mwd]_(\d{4}-\d{2}).csv', f)].sort()
 
     adj_viewer = dict()
     adj_period = dict()
