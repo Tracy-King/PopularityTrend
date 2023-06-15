@@ -62,6 +62,15 @@ class MLN(torch.nn.Module):
         mx = r_mat_inv.dot(mx)
         return mx
 
+    def normalize_tensor(self, mx):
+        """Row-normalize sparse matrix"""
+        rowsum = torch.tensor(torch.sum(mx, 1))
+        r_inv = torch.flatten(torch.pow(rowsum, -1))
+        r_inv[torch.isinf(r_inv)] = 0.
+        r_mat_inv = torch.sparse.spdiags(r_inv, torch.Tensor([0]), (r_inv.shape[0], r_inv.shape[0]))
+        mx = torch.sparse.mm(r_mat_inv, mx)
+        return mx
+
     def sparse_mx_to_torch_sparse_tensor(self, sparse_mx):
         """Convert a scipy sparse matrix to a torch sparse tensor."""
         sparse_mx = sparse_mx.tocoo().astype(np.float32)
@@ -113,9 +122,7 @@ class MLN(torch.nn.Module):
         if self.gsl:
             adj_f = self.GSL(features.to_dense())
             adj_f = adj_f + adj_f.T.multiply(adj_f.T > adj_f) - adj_f.multiply(adj_f.T > adj_f)
-            adj_f = self.normalize(adj_f + sp.eye(adj_f.shape[0]))
-
-            adj_f = adj_f.to_sparse()
+            adj_f = self.normalize(adj_f.to_sparse() + sp.eye(adj_f.shape[0]))
 
             adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_f
             adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_f

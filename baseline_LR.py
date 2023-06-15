@@ -20,28 +20,26 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error
 import math
-
-
-pd.set_option('display.max_columns', None)
-np.set_printoptions(threshold=np.inf)
-
+import os
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
 parser.add_argument('--period', type=str, default="m", choices=[
-  "d", "w", "m"], help='Period of data separation(day, week, month)')
+    "d", "w", "m"], help='Period of data separation(day, week, month)')
 
 try:
-  args = parser.parse_args()
+    args = parser.parse_args()
 except:
-  parser.print_help()
-  sys.exit(0)
+    parser.print_help()
+    sys.exit(0)
 
 PERIOD = args.period
 START = args.start
 
-f = open('logs_{}.txt'.format(PERIOD), 'w')
+pd.set_option('display.max_columns', None)
+np.set_printoptions(threshold=np.inf)
 
+f = open('logs_{}.txt'.format(PERIOD), 'w')
 
 '''
 df = pd.concat([
@@ -263,32 +261,56 @@ def NN(x, y, test_size, mean, std):
 
 
 def main():
+
+    '''
     df = pd.concat([
         pd.read_csv(f)
         for f in glob.iglob('results/result_{}_*.csv'.format(PERIOD))], ignore_index=True)
     print(df.info())
+    '''
+    if os.path.isfile('label_{}.csv'.format(PERIOD)) and os.path.isfile('node_features_{}.csv'.format(PERIOD)):
+        target = pd.read_csv('label_{}.csv'.format(PERIOD), index_col=0)
+        node_features = pd.read_csv('node_features_{}.csv'.format(PERIOD), index_col=0)
+        channels = pd.read_csv('Vtuber1B_elements/channels.csv')
+        node_features = pd.merge(node_features, channels[['channelId', 'subscriptionCount', 'videoCount']],
+                                   how='left',
+                                   on='channelId')
+        df = pd.merge(node_features, target, how='left', on=['channelId', 'date']).fillna(0)
+        df = df.drop(['impact1', 'impact2', 'impact3', 'impact4', 'impact5', 'impact6', 'impact7'], axis=1)
+        print(df.info())
+
+        x = df.drop(['date', 'channelId', 'target', 'perf'], axis=1).astype('float32')
+        y = df['perf'].astype('float32')
+        #df.to_csv('tmp.csv')
+
+
     #result = readData(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
-    x, y = dataSplit(df)
+    #x, y = dataSplit(df)
+    #print(np.isnan(x).sum(), np.isnan(y).sum())
     np.save('X_{}.npy'.format(PERIOD), x)
     np.save('Y_{}.npy'.format(PERIOD), y)
     alphas = [0, 0.001, 0.01, 0.1, 1, 5, 10, 50, 100, 500, 1000, 10000, 100000]
     test_size = [i / 10 for i in range(1, 6, 1)]
     estimators = [i*1000 for i in range(1, 6, 1)]
     depths = [i+6 for i in range(1, 6, 2)]
-    x = np.load('X_{}.npy'.format(PERIOD))[: , :-7]
+    x = np.load('X_{}.npy'.format(PERIOD))
     y = np.load('Y_{}.npy'.format(PERIOD))
+
+
 
     mean = x.mean(axis=0)
     x -= mean  # 等价于 train_data = train_data - mean
     std = x.std(axis=0)
     x / (1 + std)
-    print(mean, std)
+    print('x:', mean, std)
 
     mean = y.mean(axis=0)
     #y -= mean  # 等价于 train_data = train_data - mean
     std = y.std(axis=0)
     #y / (1 + std)
-    print(mean, std)
+    print('y', mean, std)
+
+    print(y[:5])
 
     #print(x.shape, y.shape)
     #plt.scatter(x[:, 0], y)

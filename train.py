@@ -15,10 +15,8 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
-parser.add_argument('--period', type=str, default="m", choices=[
+parser.add_argument('--period', type=str, default="w", choices=[
     "d", "w", "m"], help='Period of data separation(day, week, month)')
-parser.add_argument('--year', type=str, default="2022", choices=["2021", "2022"],
-                    help='Period of data separation(day, week, month)')
 parser.add_argument('--epochs', type=int, default=10,
                     help='Number of epochs to train.')          # straight_5_18  attn_3_29
 parser.add_argument('--prefix', type=str, default='straight_5_18', help='Prefix to name the checkpoints')
@@ -45,14 +43,14 @@ parser.add_argument('--gsl', action='store_true', default=False,
 
 
 try:
-    args = parser.parse_args()
+    #print(parser.parse_known_args())
+    args, unknown = parser.parse_known_args()
 except:
     parser.print_help()
     sys.exit(0)
 
 PERIOD = args.period
 START = args.start
-YEAR = args.year
 args.cuda = 0 if (not args.no_cuda) and (torch.cuda.is_available()) else -1
 COLDSTART = args.coldstart
 

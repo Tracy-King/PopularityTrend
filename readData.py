@@ -68,7 +68,7 @@ def readData(period):
     labels, node_feature_df = target(date_concat, period, label_concat)
     channels = pd.read_csv('Vtuber1B_elements/channels.csv')
     node_feature_df = pd.merge(node_feature_df, channels[['channelId', 'subscriptionCount', 'videoCount']], how='left',
-                  on='channelId')
+                  on='channelId').fillna(0)
 
     #dateList = labels['date'].drop_duplicates().tolist()
 

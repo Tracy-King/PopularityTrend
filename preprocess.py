@@ -8,23 +8,6 @@ import sys
 import scipy.sparse as sp
 import os
 
-parser = argparse.ArgumentParser('TGN self-supervised training')
-parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
-parser.add_argument('--period', type=str, default="w", choices=[
-  "d", "w", "m"], help='Period of data separation(day, week, month)')
-parser.add_argument('--year', type=str, default="2021", choices=["2021", "2022"],
-                    help='Period of data separation(day, week, month)')
-
-try:
-  args = parser.parse_args()
-except:
-  parser.print_help()
-  sys.exit(0)
-
-PERIOD = args.period
-START = args.start
-YEAR = args.year
-
 
 
 
@@ -325,6 +308,22 @@ def target(date_concat, p, label_concat):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser('TGN self-supervised training')
+    parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
+    parser.add_argument('--period', type=str, default="w", choices=[
+        "d", "w", "m"], help='Period of data separation(day, week, month)')
+    parser.add_argument('--year', type=str, default="2021", choices=["2021", "2022"],
+                        help='Period of data separation(day, week, month)')
+
+    try:
+        args = parser.parse_args()
+    except:
+        parser.print_help()
+        sys.exit(0)
+
+    PERIOD = args.period
+    START = args.start
+    YEAR = args.year
 
     for f in glob.glob('parquets/chats_{}-*.parquet'.format(YEAR)):
         print(f)
