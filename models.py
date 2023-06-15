@@ -56,19 +56,16 @@ class GSL(nn.Module):
         #print(n_nodes, feature.shape, self.weight.shape)
         x = torch.zeros(n_nodes, n_nodes)
         #print(x.shape)
-        for i in range(n_nodes):
-            for j in range(n_nodes):
-                tmp = torch.unsqueeze((feature[i, :] - feature[j, :]), 0)
-                #print(tmp.shape)
-                tmp = torch.mm(tmp, self.weight)
-                tmp = tmp.mm(tmp.T)
-                #print(tmp.shape)
-                x[i, j] = torch.sqrt(tmp)
+        f = torch.unsqueeze(feature, 1)
+        f = f.expand(f.shape[0], f.shape[0], f.shape[2])
+        ft = torch.transpose(f, 0, 1)
+        x = (f - ft).matmul(self.weight)
+        x = torch.sqrt((x * x).sum(2))
 
         sigma = torch.std(x)
         x = torch.exp(-x / 2*sigma.pow(2))
         adj = nn.functional.normalize(x.view(1, -1), p=2.0, dim=1, eps=1e-12, out=None).view(n_nodes, n_nodes)
-        return adj.to_dense()
+        return adj
 
 
 

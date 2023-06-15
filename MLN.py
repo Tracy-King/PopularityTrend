@@ -67,8 +67,8 @@ class MLN(torch.nn.Module):
         rowsum = torch.tensor(torch.sum(mx, 1))
         r_inv = torch.flatten(torch.pow(rowsum, -1))
         r_inv[torch.isinf(r_inv)] = 0.
-        r_mat_inv = torch.sparse.spdiags(r_inv, torch.Tensor([0]), (r_inv.shape[0], r_inv.shape[0]))
-        mx = torch.sparse.mm(r_mat_inv, mx)
+        r_mat_inv = torch.diag(r_inv)
+        mx = torch.mm(r_mat_inv, mx)
         return mx
 
     def sparse_mx_to_torch_sparse_tensor(self, sparse_mx):
@@ -122,7 +122,7 @@ class MLN(torch.nn.Module):
         if self.gsl:
             adj_f = self.GSL(features.to_dense())
             adj_f = adj_f + adj_f.T.multiply(adj_f.T > adj_f) - adj_f.multiply(adj_f.T > adj_f)
-            adj_f = self.normalize_tensor(adj_f.to_sparse() + torch.eye(adj_f.shape[0]).to_sparse())
+            adj_f = self.normalize_tensor(adj_f + torch.eye(adj_f.shape[0]).to(self.device)).to_sparse()
 
             adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_f
             adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_f
