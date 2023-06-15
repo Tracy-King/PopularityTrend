@@ -122,7 +122,7 @@ class MLN(torch.nn.Module):
         if self.gsl:
             adj_f = self.GSL(features.to_dense())
             adj_f = adj_f + adj_f.T.multiply(adj_f.T > adj_f) - adj_f.multiply(adj_f.T > adj_f)
-            adj_f = self.normalize(adj_f.to_sparse() + sp.eye(adj_f.shape[0]))
+            adj_f = self.normalize_tensor(adj_f.to_sparse() + torch.eye(adj_f.shape[0]).to_sparse())
 
             adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_f
             adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_f
