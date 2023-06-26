@@ -176,7 +176,7 @@ for epoch in range(args.epochs):
     loss_val = criterion(output, y_true) \
                      + args.la * criterion(adj_v, torch.zeros(adj_v.shape).to(device))\
                      + args.la * criterion(adj_p, torch.zeros(adj_p.shape).to(device))
-    print(output[:5], y_pred[:5], y_true[:5])
+    #print(output[:5], y_pred[:5], y_true[:5])
 
     with torch.no_grad():
         rmse, mape, r2, mae = evaluation(y_pred, y_true)
@@ -225,7 +225,7 @@ loss_test = criterion(y_pred, y_true)\
                      + args.la * criterion(adj_v, torch.zeros(adj_v.shape).to(device))\
                      + args.la * criterion(adj_p, torch.zeros(adj_p.shape).to(device))
 
-print(output[:5], y_pred[:5], y_true[:5])
+#print(output[:5], y_pred[:5], y_true[:5])
 
 with torch.no_grad():
     rmse, mape, r2, mae = evaluation(y_pred, y_true)

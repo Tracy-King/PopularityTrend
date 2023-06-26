@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import torch
 import scipy.sparse as sp
-from models import GCN, LSTMNet, Linear, MLP, GSL
+from models import GCN, LSTMNet, Linear, MLP, GSL, MergeLayer
 from layers import TemporalAttentionLayer
 
 
@@ -20,7 +20,7 @@ class MLN(torch.nn.Module):
         self.nodelist = nodelist
         self.dropout = dropout
         self.hidden = hidden_dim
-        self.feature_dim = 19  #10 or 17
+        self.feature_dim = 19  #10 or 17 19
         self.n_nodes = len(self.nodelist)
         self.device = device
         self.perf = perf
@@ -31,20 +31,21 @@ class MLN(torch.nn.Module):
         #self.y_pred_dict = dict()
         #self.y_true_dict = dict()
 
-        self.last_hidden_v = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
-        self.last_hidden_p = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
+        self.last_hidden_v = np.ones([self.n_nodes, self.hidden], dtype=np.float32)
+        self.last_hidden_p = np.ones([self.n_nodes, self.hidden], dtype=np.float32)
         self.last_c_v = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
         self.last_c_p = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
         self.hidden_embedding = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
 
-        self.model_v = GCN(self.feature_dim, self.hidden * 2, self.hidden, dropout=self.dropout)
-        self.model_p = GCN(self.feature_dim, self.hidden * 2, self.hidden, dropout=self.dropout)
+        self.model_v = GCN(self.hidden, self.hidden * 2, self.hidden, dropout=self.dropout)
+        self.model_p = GCN(self.hidden, self.hidden * 2, self.hidden, dropout=self.dropout)
         self.rnn_v = LSTMNet(self.hidden, self.hidden, dropout=self.dropout)
         self.rnn_p = LSTMNet(self.hidden, self.hidden, dropout=self.dropout)
+        self.merge = MergeLayer(self.hidden, self.hidden, self.hidden, self.hidden)
         self.linear = Linear(self.feature_dim, self.hidden, dropout=self.dropout)
         self.MLP = MLP(self.hidden, self.dropout)
         if self.gsl:
-            self.GSL = GSL(self.feature_dim)
+            self.GSL = GSL(self.hidden)
         self.attention_model = TemporalAttentionLayer(
             n_node_embedding=self.hidden,
             n_node_old_embedding=self.hidden,
@@ -120,18 +121,24 @@ class MLN(torch.nn.Module):
         adj_v_ori, adj_p_ori, adj_d, features, channels = self.loadData(date)
 
         if self.gsl:
-            adj_f = self.GSL(features.to_dense())
-            adj_f = adj_f + adj_f.T.multiply(adj_f.T > adj_f) - adj_f.multiply(adj_f.T > adj_f)
-            adj_f = self.normalize_tensor(adj_f + torch.eye(adj_f.shape[0]).to(self.device)).to_sparse()
+            adj_v = self.GSL(torch.from_numpy(self.last_hidden_v).to(self.device))
+            adj_v = adj_v + adj_v.T.multiply(adj_v.T > adj_v) - adj_v.multiply(adj_v.T > adj_v)
+            adj_v = self.normalize_tensor(adj_v + torch.eye(adj_v.shape[0]).to(self.device)).to_sparse()
 
-            adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_f
-            adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_f
+            adj_p = self.GSL(torch.from_numpy(self.last_hidden_p).to(self.device))
+            adj_p = adj_p + adj_p.T.multiply(adj_p.T > adj_p) - adj_p.multiply(adj_p.T > adj_p)
+            adj_p = self.normalize_tensor(adj_p + torch.eye(adj_p.shape[0]).to(self.device)).to_sparse()
+
+            adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_v
+            adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_p
         else:
             adj_v = adj_v_ori
             adj_p = adj_p_ori
 
-        z_v = self.model_v(features, adj_v)
-        z_p = self.model_p(features, adj_p)
+        hidden_embedding_f = self.linear(features)
+
+        z_v = self.model_v(hidden_embedding_f, adj_v)
+        z_p = self.model_p(hidden_embedding_f, adj_p)
 
 
 
@@ -141,7 +148,7 @@ class MLN(torch.nn.Module):
         hidden_embedding_p, c_p = self.rnn_v(z_p,
                                             torch.from_numpy(self.last_hidden_p).to(self.device),
                                             torch.from_numpy(self.last_c_p).to(self.device))
-        hidden_embedding_f = self.linear(features)
+
 
         mask = hidden_embedding_v == 0
 
@@ -152,7 +159,8 @@ class MLN(torch.nn.Module):
 
         '''
         # Multi-head attention
-        hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+        #hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+        hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
 
 
         node_embedding = self.attention_model(torch.from_numpy(self.hidden_embedding).to(self.device),

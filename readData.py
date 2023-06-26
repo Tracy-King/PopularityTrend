@@ -32,6 +32,8 @@ def DF2Adj_nodeFeature(nodeList, node_feature_df, date):
     result = tmp.reindex(nodeList, axis='rows', fill_value=0.0)
 
     result = result.drop(['impact1', 'impact2', 'impact3', 'impact4', 'impact5', 'impact6', 'impact7'], axis=1)
+    #result = result.drop(['chats', 'memberChats', 'uniqueChatters', 'uniqueMembers', 'superChats',
+    #                      'uniqueSuperChatters', 'totalSC', 'totalLength'], axis=1)
 
     #print(result)
 
