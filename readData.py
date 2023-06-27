@@ -62,6 +62,7 @@ def readData(period):
                        for f in glob.glob('results/result_{}_*.csv'.format(period))
                        if re.match(r'results[\\/]result_[mwd]_(\d{4}-\d{2}).csv', f) is not None]
     label_concat.sort()
+    date_concat.sort()
 
     adj_viewer = dict()
     adj_period = dict()
@@ -92,7 +93,7 @@ def readData(period):
         nodes[date] = [x for x in node_tmp if x in nodeList]
 
 
-    adj_description = overlap_description.to_numpy()
+    adj_description = overlap_description.to_numpy() + np.ones(overlap_description.shape)
 
     #print(dateList)
 

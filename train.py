@@ -22,7 +22,7 @@ parser.add_argument('--period', type=str, default="m", choices=[
 parser.add_argument('--epochs', type=int, default=10,
                     help='Number of epochs to train.')          # straight_5_18  attn_3_29
 parser.add_argument('--prefix', type=str, default='straight_5_18', help='Prefix to name the checkpoints')
-parser.add_argument('--coldstart', type=int, default=8, help='Number of data for pretraining')
+parser.add_argument('--coldstart', type=int, default=0, help='Number of data for pretraining')
 parser.add_argument('--lr', type=float, default=0.001,
                     help='Initial learning rate.')
 parser.add_argument('--weight_decay', type=float, default=1e-2,
@@ -94,13 +94,13 @@ datelist, node_feature, adj_viewer, adj_period, adj_description, labels, nodes, 
 
 
 
-#datelist = datelist[:-5]
+#datelist = datelist[-7:]
 
 #cs_list = datelist[:COLDSTART]
 #norm_dict = get_norm(labels, datelist[:COLDSTART], nodelist, args.perf)
 #norm_mu, norm_sigma = get_norm(labels, datelist[:COLDSTART], nodelist, args.perf)
 
-if 0 >= COLDSTART or COLDSTART >= len(datelist):
+if 0 > COLDSTART or COLDSTART >= len(datelist):
     logger.error('Invalid COLDSTART')
     sys.exit(0)
 

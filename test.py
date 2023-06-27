@@ -12,6 +12,7 @@ import plotly.express as px
 import re
 import readData
 import networkx as nx
+import scipy.sparse as sp
 
 
 
@@ -170,46 +171,49 @@ if __name__ == "__main__":
 
     date_concat = date_concat[:2]
 
-
+    adj_d = sp.csr_matrix(adj_description, dtype=np.float32)
 
     for i in range(len(date_concat)):
         plt.figure(figsize=(12, 10), dpi=50)
         date = date_concat[i]
         adj_v = adj_viewer[date].tocoo()    # sp.coo_matrix
         adj_p = adj_period[date].tocoo()    # sp.coo_matrix
+        adj_d = adj_d.tocoo()
         node = nodes[date]
 
-        adj_g_weight_edges = [(adj_v.row[i], adj_v.col[i], adj_v.data[i]) for i in range(len(adj_v.row))]
+        adj_g_weight_edges = [(adj_d.row[i], adj_d.col[i], adj_d.data[i]) for i in range(len(adj_d.row))]
+        #adj_g_weight_edges = [(adj_v.row[i], adj_v.col[i], adj_v.data[i]) for i in range(len(adj_v.row))]
         #adj_g_weight_edges = [(adj_p.row[i], adj_p.col[i], adj_p.data[i]) for i in range(len(adj_p.row))]
 
 
         adj_G = nx.Graph()
         adj_G.add_weighted_edges_from(adj_g_weight_edges)
-        pos = nx.spring_layout(adj_G, k=3)
+        pos = nx.spring_layout(adj_G, k=2)
 
         g_node = adj_G.nodes()
         channels = [nodeList[x] for x in g_node]
         node_labels = labels.query('date == @date')
         node_label = [node_labels.query('channelId == @x')['perf'].to_list() for x in channels]
         node_label = [x[0] if len(x)>0 else 0.0 for x in node_label]
+        adj_G.remove_edges_from(nx.selfloop_edges(adj_G))
 
         #print(node_label)
         node_min = min(node_label)
-        edge_min = min(adj_v.data)
+        edge_min = min(adj_d.data)
         node_weight = [min(20, int(x-node_min)+10) for x in node_label]
         edge_weight = [min(20, int(d['weight']-edge_min)+10) for (u, v, d) in adj_G.edges(data=True)]
         #print(edge_weight)
 
         print(len(adj_G.edges()), len(edge_weight))
 
+
         node_cmap = plt.cm.get_cmap('Greens')
         edge_cmap = plt.cm.get_cmap('Blues')
-        nx.draw_networkx(adj_G, pos, edge_color=edge_weight, node_size=150, width=3, cmap=node_cmap, nodelist=g_node,
-                         node_color=node_weight, edge_cmap=edge_cmap, with_labels=False, vmin=0, vmax=20,
-                         edge_vmin=10, edge_vmax=20)
-                         #
+        nx.draw_networkx(adj_G, pos, edge_color=edge_weight, node_size=100, width=3, cmap=node_cmap, nodelist=g_node,
+                         node_color=node_weight, edge_cmap=edge_cmap, with_labels=False, vmin=0, vmax=20)
+
         #plt.title('Adj_viewer-{}-{}'.format(date, period), fontsize=40)
-        plt.title('Adj_viewer-{}-{}'.format(date, period), fontsize=40)
+        plt.title('Adj_description-{}-{}'.format(date, period), fontsize=40)
         plt.show()
 
 
