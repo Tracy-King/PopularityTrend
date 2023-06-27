@@ -40,7 +40,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
 parser.add_argument('--perf', action='store_true', default=True,
                     help='Percentage label.')
-parser.add_argument('--gsl', action='store_true', default=True,
+parser.add_argument('--gsl', action='store_true', default=False,
                     help='Using graph structure learning.')
 
 
@@ -97,7 +97,7 @@ datelist, node_feature, adj_viewer, adj_period, adj_description, labels, nodes, 
 #datelist = datelist[:-5]
 
 #cs_list = datelist[:COLDSTART]
-norm_dict = get_norm(labels, datelist[:COLDSTART], nodelist, args.perf)
+#norm_dict = get_norm(labels, datelist[:COLDSTART], nodelist, args.perf)
 #norm_mu, norm_sigma = get_norm(labels, datelist[:COLDSTART], nodelist, args.perf)
 
 if 0 >= COLDSTART or COLDSTART >= len(datelist):
@@ -167,7 +167,7 @@ for epoch in range(args.epochs):
     node_embedding, output, y_true, adj_v, adj_p = model.get_embedding(datelist[-2])
 
 
-    norm = np.array([norm_dict[x] for x in nodes[datelist[-2]]])  # [0]: mu, [1]: sigma
+    #norm = np.array([norm_dict[x] for x in nodes[datelist[-2]]])  # [0]: mu, [1]: sigma
     #y_true_n = (y_true - torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)) / \
     #           torch.from_numpy(np.expand_dims(norm[:, 1], axis=1)).to(device)
 

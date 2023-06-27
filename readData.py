@@ -34,6 +34,8 @@ def DF2Adj_nodeFeature(nodeList, node_feature_df, date):
     result = result.drop(['impact1', 'impact2', 'impact3', 'impact4', 'impact5', 'impact6', 'impact7'], axis=1)
     #result = result.drop(['chats', 'memberChats', 'uniqueChatters', 'uniqueMembers', 'superChats',
     #                      'uniqueSuperChatters', 'totalSC', 'totalLength'], axis=1)
+    result = result.drop(['chatsPerHrs', 'memberChatsPerHrs', 'uniqueChattersPerHrs', 'uniqueMembersPerHrs', 'superChatsPerHrs',
+                          'uniqueSuperChattersPerHrs', 'totalSCPerHrs', 'totalLengthPerHrs'], axis=1)
 
     #print(result)
 
@@ -46,19 +48,20 @@ def readData(period):
     #result = pd.read_csv('result_{}.csv'.format(date_concat))
 
     if period == 'm':
-        date_concat = [re.findall(r'overlaps\\overlap_viewers_(\d{4}-\d{2}).csv', f)[0]
+        date_concat = [re.findall(r'overlaps[\\/]overlap_viewers_(\d{4}-\d{2}).csv', f)[0]
                        for f in glob.glob('overlaps/overlap_viewers_*.csv')
-                       if re.match(r'overlaps\\overlap_viewers_\d{4}-\d{2}.csv', f)]
+                       if re.match(r'overlaps[\\/]overlap_viewers_\d{4}-\d{2}.csv', f) is not None]
     elif period == 'w':
-        date_concat = [re.findall(r'overlaps\\overlap_viewers_(\d{4}-\d{2}-\d{1}).csv', f)[0]
+        date_concat = [re.findall(r'overlaps[\\/]overlap_viewers_(\d{4}-\d{2}-\d{1}).csv', f)[0]
                        for f in glob.glob('overlaps/overlap_viewers_*.csv')
-                       if re.match(r'overlaps\\overlap_viewers_\d{4}-\d{2}-\d{1}.csv', f)]
+                       if re.match(r'overlaps[\\/]overlap_viewers_\d{4}-\d{2}-\d{1}.csv', f) is not None]
 
     #date_concat = ['2021-09', '2021-10', '2021-11']
 
-    label_concat = [re.findall(r'results\\result_[mwd]_(\d{4}-\d{2}).csv', f)[0]
-                       for f in glob.glob('results\\result_{}_*.csv'.format(period))
-                       if re.match(r'results\\result_[mwd]_(\d{4}-\d{2}).csv', f)].sort()
+    label_concat = [re.findall(r'results[\\/]result_[mwd]_(\d{4}-\d{2}).csv', f)[0]
+                       for f in glob.glob('results/result_{}_*.csv'.format(period))
+                       if re.match(r'results[\\/]result_[mwd]_(\d{4}-\d{2}).csv', f) is not None]
+    label_concat.sort()
 
     adj_viewer = dict()
     adj_period = dict()
