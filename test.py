@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import glob
-import matplotlib as plt
+import matplotlib.pyplot as plt
 #from plotly.subplots import make_subplot
 from datetime import datetime
 import argparse
@@ -9,6 +9,11 @@ from tqdm import tqdm
 import sys
 import torch
 import plotly.express as px
+import re
+import readData
+import networkx as nx
+import scipy.sparse as sp
+
 
 
 import plotly.io as pio
@@ -116,7 +121,7 @@ def dataGeneration(dateList, df, sc_df):
 
 
 
-def readData(chat_f, sc_f, mode='d'):
+def read_data(chat_f, sc_f, mode='d'):
     df = pd.read_parquet(chat_f)
     sc_df = pd.read_parquet(sc_f)
 
@@ -155,12 +160,65 @@ def main():
     chat = 'chats_{}.parquet'.format(START)
     sc = 'superchats_{}.parquet'.format(START)
 
-    result = readData(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
+    result = read_data(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
 
     result.to_csv('result_{}_{}.csv'.format(PERIOD, START))
 
 
 if __name__ == "__main__":
+    period = 'w'
+    date_concat, _, adj_viewer, adj_period, adj_description, labels, nodes, nodeList = readData.readData(period)
+
+    date_concat = date_concat[:2]
+
+    adj_d = sp.csr_matrix(adj_description, dtype=np.float32)
+
+    for i in range(len(date_concat)):
+        plt.figure(figsize=(12, 10), dpi=50)
+        date = date_concat[i]
+        adj_v = adj_viewer[date].tocoo()    # sp.coo_matrix
+        adj_p = adj_period[date].tocoo()    # sp.coo_matrix
+        adj_d = adj_d.tocoo()
+        node = nodes[date]
+
+        adj_g_weight_edges = [(adj_d.row[i], adj_d.col[i], adj_d.data[i]) for i in range(len(adj_d.row))]
+        #adj_g_weight_edges = [(adj_v.row[i], adj_v.col[i], adj_v.data[i]) for i in range(len(adj_v.row))]
+        #adj_g_weight_edges = [(adj_p.row[i], adj_p.col[i], adj_p.data[i]) for i in range(len(adj_p.row))]
+
+
+        adj_G = nx.Graph()
+        adj_G.add_weighted_edges_from(adj_g_weight_edges)
+        pos = nx.spring_layout(adj_G, k=2)
+
+        g_node = adj_G.nodes()
+        channels = [nodeList[x] for x in g_node]
+        node_labels = labels.query('date == @date')
+        node_label = [node_labels.query('channelId == @x')['perf'].to_list() for x in channels]
+        node_label = [x[0] if len(x)>0 else 0.0 for x in node_label]
+        adj_G.remove_edges_from(nx.selfloop_edges(adj_G))
+
+        #print(node_label)
+        node_min = min(node_label)
+        edge_min = min(adj_d.data)
+        node_weight = [min(20, int(x-node_min)+10) for x in node_label]
+        edge_weight = [min(20, int(d['weight']-edge_min)+10) for (u, v, d) in adj_G.edges(data=True)]
+        #print(edge_weight)
+
+        print(len(adj_G.edges()), len(edge_weight))
+
+
+        node_cmap = plt.cm.get_cmap('Greens')
+        edge_cmap = plt.cm.get_cmap('Blues')
+        nx.draw_networkx(adj_G, pos, edge_color=edge_weight, node_size=100, width=3, cmap=node_cmap, nodelist=g_node,
+                         node_color=node_weight, edge_cmap=edge_cmap, with_labels=False, vmin=0, vmax=20)
+
+        #plt.title('Adj_viewer-{}-{}'.format(date, period), fontsize=40)
+        plt.title('Adj_description-{}-{}'.format(date, period), fontsize=40)
+        plt.show()
+
+
+        #print(adj_v.data, adj_v.row, adj_v.col)
+
     #main()
     #df = pd.read_csv('Vtuber1B_elements\chat_stats.csv')
     #df = pd.read_csv('overlap_period.csv')
@@ -172,6 +230,7 @@ if __name__ == "__main__":
 
     #print(tmp['chats'].sum())
 
+    '''
     x= torch.tensor([[1, 2, 3, 3], [4, 5, 6, 6], [7, 8, 9, 9]], dtype=torch.float32)
     print(x.shape)
     x = torch.unsqueeze(x, 1)
@@ -204,7 +263,8 @@ if __name__ == "__main__":
                                       'impact5', 'impact6', 'impact7'], axis=1)
 
     df = df.query('perf < 2.0')
-    fig = px.box(node_feature, log_y=True)
-    #fig = px.box(df, x='period', y='perf', points='all')
+    #fig = px.box(node_feature, log_y=True)
+    fig = px.box(df, x='period', y='perf', points='all')
     fig.update_layout(font_size=30)
     fig.show()
+    '''

@@ -20,7 +20,7 @@ class MLN(torch.nn.Module):
         self.nodelist = nodelist
         self.dropout = dropout
         self.hidden = hidden_dim
-        self.feature_dim = 19  #10 or 17 19
+        self.feature_dim = 11  #10 or 17   11  19
         self.n_nodes = len(self.nodelist)
         self.device = device
         self.perf = perf
@@ -109,11 +109,11 @@ class MLN(torch.nn.Module):
         adj_d = self.adj_description  # + np.diag(len(self.nodelist))
 
         features = self.normalize(features)
-        target = self.labels.query('date == @date & channelId in @channels').copy()
-        sort_map = pd.DataFrame({'channelId': channels, }).reset_index().set_index('channelId')
+        #target = self.labels.query('date == @date & channelId in @channels').copy()
+        #sort_map = pd.DataFrame({'channelId': channels, }).reset_index().set_index('channelId')
 
-        target['map'] = target['channelId'].map(sort_map['index'])
-        target.sort_values('map')
+        #target['map'] = target['channelId'].map(sort_map['index'])
+        #target.sort_values('map')
 
         features = self.sparse_mx_to_torch_sparse_tensor(features).to(self.device)
 
@@ -129,16 +129,13 @@ class MLN(torch.nn.Module):
         adj_v_ori, adj_p_ori, adj_d, features, channels = self.loadData(date)
 
         if self.gsl:
-            adj_v = self.GSL(torch.from_numpy(self.last_hidden_v).to(self.device))
-            adj_v = adj_v + adj_v.T.multiply(adj_v.T > adj_v) - adj_v.multiply(adj_v.T > adj_v)
-            adj_v = self.normalize_tensor(adj_v + torch.eye(adj_v.shape[0]).to(self.device)).to_sparse()
+            adj_re = self.GSL(torch.from_numpy(self.hidden_embedding).to(self.device))
+            adj_re = adj_re + adj_re.T.multiply(adj_re.T > adj_re) - adj_re.multiply(adj_re.T > adj_re)
+            adj_re = self.normalize_tensor(adj_re + torch.eye(adj_re.shape[0]).to(self.device)).to_sparse()
 
-            adj_p = self.GSL(torch.from_numpy(self.last_hidden_p).to(self.device))
-            adj_p = adj_p + adj_p.T.multiply(adj_p.T > adj_p) - adj_p.multiply(adj_p.T > adj_p)
-            adj_p = self.normalize_tensor(adj_p + torch.eye(adj_p.shape[0]).to(self.device)).to_sparse()
 
-            adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_v
-            adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_p
+            adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_re
+            adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_re
         else:
             adj_v = adj_v_ori
             adj_p = adj_p_ori
@@ -167,8 +164,14 @@ class MLN(torch.nn.Module):
 
         '''
         # Multi-head attention
+
         hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
         hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
+
+        #hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+        #hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
+        hidden_embedding = self.merge(hidden_embedding_v, hidden_embedding_p)
+
 
 
         node_embedding = self.attention_model(torch.from_numpy(self.hidden_embedding).to(self.device),
