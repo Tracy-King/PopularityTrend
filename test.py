@@ -1,23 +1,21 @@
 import pandas as pd
 import numpy as np
 import glob
-import matplotlib.pyplot as plt
-#from plotly.subplots import make_subplot
+#import matplotlib.pyplot as plt
+##from plotly.subplots import make_subplot
 from datetime import datetime
 import argparse
 from tqdm import tqdm
 import sys
 import torch
-import plotly.express as px
 import re
 import readData
-import networkx as nx
 import scipy.sparse as sp
 
 
 
-import plotly.io as pio
-pio.renderers.default = "browser"
+#import plotly.io as pio
+#pio.renderers.default = "browser"
 
 
 pd.set_option('display.max_columns', None)
@@ -212,11 +210,11 @@ def read_data(chat_f, sc_f, mode='d'):
     df = pd.merge(df, channels, how='left', on='channelId')
     sc_df = pd.merge(sc_df, channels, how='left', on='channelId')
 
-    df["timestamp"] = pd.to_datetime(df['timestamp'])
+    df["timestamp"] = pd.to_datetime(df['timestamp'], format='ISO8601')
     df.sort_index(inplace=False)
     df["timestamp"] = df["timestamp"].dt.to_period(mode)
 
-    sc_df["timestamp"] = pd.to_datetime(sc_df['timestamp'])
+    sc_df["timestamp"] = pd.to_datetime(sc_df['timestamp'], format='ISO8601')
     sc_df.sort_index(inplace=False)
     sc_df["timestamp"] = sc_df["timestamp"].dt.to_period(mode)
 
