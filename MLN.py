@@ -54,6 +54,14 @@ class MLN(torch.nn.Module):
             n_head=2,
             dropout=self.dropout)
 
+    def reset(self):
+        self.last_hidden_v = np.ones([self.n_nodes, self.hidden], dtype=np.float32)
+        self.last_hidden_p = np.ones([self.n_nodes, self.hidden], dtype=np.float32)
+        self.last_c_v = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
+        self.last_c_p = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
+        self.hidden_embedding = np.zeros([self.n_nodes, self.hidden], dtype=np.float32)
+
+
     def normalize(self, mx):
         """Row-normalize sparse matrix"""
         rowsum = np.array(mx.sum(1))
@@ -159,7 +167,7 @@ class MLN(torch.nn.Module):
 
         '''
         # Multi-head attention
-        #hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+        hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
         hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
 
 
