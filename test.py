@@ -140,10 +140,10 @@ def dataGenerationViewers(dateList, df, sc_df):
                 if row['currency'] == k:
                     row['amount'] = row['amount']*v
 
-        channelId = tmp['authorChannelId'].drop_duplicates().tolist()
-        chats = tmp['authorChannelId'].value_counts().to_dict()
-        memberChats = tmp[tmp['isMember'].isin([1.0])]['authorChannelId'].value_counts().to_dict()
-        uniqueChatters = unique_tmp['authorChannelId'].value_counts().to_dict()
+        authorId = tmp_sc['authorChannelId'].drop_duplicates().tolist()
+        channels = tmp_sc['authorChannelId'].value_counts().to_dict()
+        memberChannels = tmp[tmp['isMember'].isin([1.0])]['authorChannelId'].value_counts().to_dict()
+        uniqueChannels = unique_tmp_sc['authorChannelId'].value_counts().to_dict()
         uniqueMembers = unique_tmp[tmp['isMember'].isin([1.0])]['authorChannelId'].value_counts().to_dict()
 
         superChats = tmp_sc['authorChannelId'].value_counts().to_dict()
@@ -157,6 +157,10 @@ def dataGenerationViewers(dateList, df, sc_df):
         impact5 = tmp_sc[tmp_sc['significance'].isin([20])].groupby(['authorChannelId'])['significance'].count().to_dict()
         impact6 = tmp_sc[tmp_sc['significance'].isin([50])].groupby(['authorChannelId'])['significance'].count().to_dict()
         impact7 = tmp_sc[tmp_sc['significance'].isin([100])].groupby(['authorChannelId'])['significance'].count().to_dict()
+
+        linkedChannels = tmp_sc.groupby(['authorChannelId', 'channelId'])['amount'].sum()
+        print(linkedChannels[:10])
+
 
         '''
         print(chats)
@@ -178,8 +182,8 @@ def dataGenerationViewers(dateList, df, sc_df):
         #print(impact1, impact2, impact3, impact4, impact5, impact6, impact7)
         '''
 
-        for id in channelId:
-            result.loc[len(result)] = [date, id, chats.get(id, 0), memberChats.get(id, 0), uniqueChatters.get(id, 0),
+        for id in authorId:
+            result.loc[len(result)] = [date, id, channels.get(id, 0), memberChannels.get(id, 0), uniqueChannels.get(id, 0),
                                    uniqueMembers.get(id, 0), superChats.get(id, 0), uniqueSuperChatters.get(id, 0),
                                    totalLength.get(id, 0), totalSC.get(id, 0), impact1.get(id, 0), impact2.get(id, 0),
                                    impact3.get(id, 0), impact4.get(id, 0), impact5.get(id, 0), impact6.get(id, 0),
@@ -188,7 +192,7 @@ def dataGenerationViewers(dateList, df, sc_df):
         print('Date {} finished.'.format(date))
         break
 
-    return result
+    return result, linkedChannels
 
 
 
@@ -210,32 +214,33 @@ def read_data(chat_f, sc_f, mode='d'):
     df = pd.merge(df, channels, how='left', on='channelId')
     sc_df = pd.merge(sc_df, channels, how='left', on='channelId')
 
-    df["timestamp"] = pd.to_datetime(df['timestamp'], format='ISO8601')
+    df["timestamp"] = pd.to_datetime(df['timestamp'])  #, format='ISO8601'
     df.sort_index(inplace=False)
     df["timestamp"] = df["timestamp"].dt.to_period(mode)
 
-    sc_df["timestamp"] = pd.to_datetime(sc_df['timestamp'], format='ISO8601')
+    sc_df["timestamp"] = pd.to_datetime(sc_df['timestamp'])  #, format='ISO8601'
     sc_df.sort_index(inplace=False)
     sc_df["timestamp"] = sc_df["timestamp"].dt.to_period(mode)
-
+    print(mode)
 
     dateList = df['timestamp'].drop_duplicates().tolist()
 
-    #print(dateList)
+    print(dateList)
 
     #result = dataGeneration(dateList, df, sc_df)
-    result = dataGenerationViewers(dateList, df, sc_df)
+    result, linkedChannels = dataGenerationViewers(dateList, df, sc_df)
 
-    return result.convert_dtypes()
+    return result.convert_dtypes(), linkedChannels.convert_dtypes()
 
 
 def main():
     chat = 'parquets/chats_{}.parquet'.format(START)
     sc = 'parquets/superchats_{}.parquet'.format(START)
 
-    result = read_data(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
+    result, linkedChannels = read_data(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
 
     result.to_csv('resultViewer_{}_{}.csv'.format(PERIOD, START))
+    linkedChannels.to_csv('linkedChannels_{}_{}.csv'.format(PERIOD, START))
 
 
 main()
