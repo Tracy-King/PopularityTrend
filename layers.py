@@ -61,6 +61,11 @@ class MergeLayer(nn.Module):
         return h
 
 
+class BiGraphAgg(nn.Module):
+    def __init__(self, dim1, dim2):
+        super().__init__()
+
+
 class TemporalAttentionLayer(torch.nn.Module):
     """
   Temporal attention layer. Return the temporal embedding of a node given the node itself,

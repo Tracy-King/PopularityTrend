@@ -64,7 +64,7 @@ def LR(x, y, test_size, std, mean):
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
 
-    y_pred = y_pred * std + mean
+    #y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -80,7 +80,7 @@ def Rdg(x, y, test_size, alpha, std, mean):
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
 
-    y_pred = y_pred * std + mean
+    #y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -96,7 +96,7 @@ def Lso(x, y, test_size, alpha, std, mean):
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
 
-    y_pred = y_pred * std + mean
+    #y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -112,7 +112,7 @@ def SGD(x, y, test_size, std, mean):
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
 
-    y_pred = y_pred * std + mean
+    #y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -128,7 +128,7 @@ def GBR(x, y, test_size, std, mean):
     score = reg.score(X_train, y_train)
     y_pred = reg.predict(X_test)
 
-    y_pred = y_pred * std + mean
+    #y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -145,7 +145,7 @@ def XGBoost(x, y, test_size, std, mean, es=1000, depth=7):
     score = model.score(X_train, y_train)
     y_pred = model.predict(X_test)
 
-    y_pred = y_pred * std + mean
+    #y_pred = y_pred * std + mean
 
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     mape = mean_absolute_percentage_error(y_test, y_pred)
@@ -159,16 +159,16 @@ def XGBoost(x, y, test_size, std, mean, es=1000, depth=7):
 def NN(x, y, test_size, mean, std):
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
 
-    mean = X_train.mean(axis=0)
-    X_train -= mean  # 等价于 train_data = train_data - mean
-    std = X_train.std(axis=0)
-    print(mean, std)
-    X_train / (1 + std)
+    #mean = X_train.mean(axis=0)
+    #X_train -= mean  # 等价于 train_data = train_data - mean
+    #std = X_train.std(axis=0)
+    #print(mean, std)
+    #X_train / (1 + std)
 
 
 
-    X_test -= mean  # 训练集的均值和标准差
-    X_test /= (1 + std)
+    #X_test -= mean  # 训练集的均值和标准差
+    #X_test /= (1 + std)
 
     inputDim = X_train.shape[1]  # takes variable 'x'
     outputDim = 1 # takes variable 'y'
@@ -226,7 +226,7 @@ def NN(x, y, test_size, mean, std):
 
             # get output from the model, given the inputs
             outputs = model(inputs_batch)
-            outputs = outputs*torch.FloatTensor(std).cuda() + torch.FloatTensor(mean).cuda()
+            #outputs = outputs*torch.FloatTensor(std).cuda() + torch.FloatTensor(mean).cuda()
 
             # get loss for the predicted output
             loss += criterion(outputs, labels_batch)
@@ -277,6 +277,9 @@ def main():
                                    on='channelId')
         df = pd.merge(node_features, target, how='left', on=['channelId', 'date']).fillna(0)
         df = df.drop(['impact1', 'impact2', 'impact3', 'impact4', 'impact5', 'impact6', 'impact7'], axis=1)
+        df = df.drop(
+            ['chatsPerHrs', 'memberChatsPerHrs', 'uniqueChattersPerHrs', 'uniqueMembersPerHrs', 'superChatsPerHrs',
+             'uniqueSuperChattersPerHrs', 'totalSCPerHrs', 'totalLengthPerHrs'], axis=1)
         print(df.info())
 
         x = df.drop(['date', 'channelId', 'target', 'perf'], axis=1).astype('float32')
@@ -296,7 +299,13 @@ def main():
     x = np.load('X_{}.npy'.format(PERIOD))
     y = np.load('Y_{}.npy'.format(PERIOD))
 
+    valid_mask = (y < 2.0)
+    #print(valid_mask)
 
+    # print(valid_mask)
+
+    x = x[valid_mask]
+    y = y[valid_mask]
 
     mean = x.mean(axis=0)
     x -= mean  # 等价于 train_data = train_data - mean

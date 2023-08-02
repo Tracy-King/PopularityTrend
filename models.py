@@ -20,19 +20,19 @@ class GCN(nn.Module):
 
 
 class MergeLayer(torch.nn.Module):
-  def __init__(self, dim1, dim2, dim3, dim4):
+  def __init__(self, dim1, dim2, dim3, dim4, dim5):
     super().__init__()
-    self.fc1 = torch.nn.Linear(dim1 + dim2, dim3)
-    self.fc2 = torch.nn.Linear(dim3, dim4)
+    self.fc1 = torch.nn.Linear(dim1 + dim2 + dim3, dim4)
+    self.fc2 = torch.nn.Linear(dim4, dim5)
     self.act = torch.nn.PReLU()
-    self.bn = torch.nn.BatchNorm1d(dim4)
+    self.bn = torch.nn.BatchNorm1d(dim5)
 
 
     torch.nn.init.xavier_normal_(self.fc1.weight)
     torch.nn.init.xavier_normal_(self.fc2.weight)
 
-  def forward(self, x1, x2):
-    x = torch.cat([x1, x2], dim=1)
+  def forward(self, x1, x2, x3):
+    x = torch.cat([x1, x2, x3], dim=1)
     h = self.act(self.fc1(x))
     h = self.bn(self.act(self.fc2(h)))
     return h

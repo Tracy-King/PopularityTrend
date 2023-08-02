@@ -25,6 +25,24 @@ def DF2Adj(nodeList, df):
 
     return sp.csr_matrix(tmp, dtype=np.float32)
 
+def DF2BiAdj(nodeList, viewer_list, bi_graph_df):
+    #result = bi_graph_df.reindex(nodeList, axis='rows', fill_value=0.0)
+    u = [i for i in range(len(nodeList))]
+    v = [i for i in range(len(viewer_list))]
+    sort_map_u = pd.DataFrame({'channel': nodeList, 'u': u}).reset_index().set_index('channel')
+    sort_map_v = pd.DataFrame({'authorChannel': nodeList, 'u': u}).reset_index().set_index('channel')
+
+    bi_graph_df['u'] = bi_graph_df['channel'].map(sort_map_u['u'])
+    bi_graph_df['v'] = bi_graph_df['authorChannel'].map(sort_map_v['v'])
+
+    adj = np.zeros((len(u), len(v)), dtype=np.float32)
+
+    for index, row in bi_graph_df.iterrows():
+        adj[row['u'], row['v']] = row['amount']
+
+    return sp.csr_matrix(adj.to_numpy(), dtype=np.float32)
+
+
 def DF2Adj_nodeFeature(nodeList, node_feature_df, date):
     df = node_feature_df.query('date == @date')
     tmp =df.drop(['date'], axis=1).set_index('channelId')
@@ -41,6 +59,22 @@ def DF2Adj_nodeFeature(nodeList, node_feature_df, date):
 
     return sp.csr_matrix(result.to_numpy(), dtype=np.float32)
 
+
+def DF2Adj_viewerFeature(nodeList, node_feature_df, date):
+    df = node_feature_df.query('date == @date')
+    tmp =df.drop(['date'], axis=1).set_index('authorChannelId')
+    viewer_list = df.index.to_list()
+    #result = tmp.reindex(nodeList, axis='rows', fill_value=0.0)
+
+    result = tmp.drop(['impact1', 'impact2', 'impact3', 'impact4', 'impact5', 'impact6', 'impact7'], axis=1)
+    #result = result.drop(['chats', 'memberChats', 'uniqueChatters', 'uniqueMembers', 'superChats',
+    #                      'uniqueSuperChatters', 'totalSC', 'totalLength'], axis=1)
+    #result = result.drop(['chatsPerHrs', 'memberChatsPerHrs', 'uniqueChattersPerHrs', 'uniqueMembersPerHrs', 'superChatsPerHrs',
+    #                      'uniqueSuperChattersPerHrs', 'totalSCPerHrs', 'totalLengthPerHrs'], axis=1)
+
+    #print(result)
+
+    return sp.csr_matrix(result.to_numpy(), dtype=np.float32), viewer_list
 
 
 def readData(period):
@@ -61,17 +95,21 @@ def readData(period):
     label_concat = [re.findall(r'results[\\/]result_[mwd]_(\d{4}-\d{2}).csv', f)[0]
                        for f in glob.glob('results/result_{}_*.csv'.format(period))
                        if re.match(r'results[\\/]result_[mwd]_(\d{4}-\d{2}).csv', f) is not None]
+
+
     label_concat.sort()
     date_concat.sort()
 
     adj_viewer = dict()
     adj_period = dict()
     node_feature = dict()
+    viewer_feature = dict()
     nodes = dict()
+    bi_graph = dict()
 
     print(label_concat)
     print(date_concat)
-    labels, node_feature_df = target(date_concat, period, label_concat)
+    labels, node_feature_df, viewer_feature_df = target(date_concat, period, label_concat)
     channels = pd.read_csv('Vtuber1B_elements/channels.csv')
     node_feature_df = pd.merge(node_feature_df, channels[['channelId', 'subscriptionCount', 'videoCount']], how='left',
                   on='channelId').fillna(0)
@@ -89,15 +127,18 @@ def readData(period):
         adj_viewer[date] = DF2Adj(nodeList, pd.read_csv('overlaps/overlap_viewers_{}.csv'.format(date), index_col=0))
         # period
         adj_period[date] = DF2Adj(nodeList, pd.read_csv('overlaps/overlap_period_{}.csv'.format(date), index_col=0))
+        # Viewer feature
+        viewer_feature[date], viewer_list = DF2Adj_viewerFeature(nodeList, viewer_feature_df, date)
         node_tmp = labels.query('date == @date')['channelId'].drop_duplicates().tolist()
         nodes[date] = [x for x in node_tmp if x in nodeList]
+        bi_graph[date] = DF2BiAdj(nodeList, viewer_list, pd.read_csv('results/linkedChannels_{}_{}.csv'.format(period, date), index_col=0))
 
 
     adj_description = overlap_description.to_numpy() + np.ones(overlap_description.shape)
 
     #print(dateList)
 
-    return date_concat[:-1], node_feature, adj_viewer, adj_period, adj_description, labels, nodes, nodeList
+    return date_concat[:-1], node_feature, adj_viewer, adj_period, adj_description, labels, nodes, nodeList, viewer_feature, bi_graph
 
 f = glob.glob('overlaps/overlap_viewers_*.csv')
 

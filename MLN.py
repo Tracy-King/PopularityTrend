@@ -3,12 +3,12 @@ import numpy as np
 import torch
 import scipy.sparse as sp
 from models import GCN, LSTMNet, Linear, MLP, GSL, MergeLayer
-from layers import TemporalAttentionLayer
+from layers import TemporalAttentionLayer, BiGraphAgg
 
 
 class MLN(torch.nn.Module):
     def __init__(self, datelist, node_feature, adj_viewer, adj_period, adj_description,
-                 labels, nodes, nodelist, hidden_dim, device, dropout=0.2, perf=False, gsl=False, alpha=1.0):
+                 labels, nodes, nodelist, viewer_feature, bi_graph, hidden_dim, device, dropout=0.2, perf=False, gsl=False, alpha=1.0):
         super(MLN, self).__init__()
         self.datelist = datelist
         self.node_feature = node_feature
@@ -18,9 +18,13 @@ class MLN(torch.nn.Module):
         self.labels = labels
         self.nodes = nodes
         self.nodelist = nodelist
+        self.viewer_feature = viewer_feature
+        self.bi_graph = bi_graph
+
         self.dropout = dropout
         self.hidden = hidden_dim
         self.feature_dim = 11  #10 or 17   11  19
+        self.viewer_feature_dim = 8
         self.n_nodes = len(self.nodelist)
         self.device = device
         self.perf = perf
@@ -41,9 +45,10 @@ class MLN(torch.nn.Module):
         self.model_p = GCN(self.hidden, self.hidden * 2, self.hidden, dropout=self.dropout)
         self.rnn_v = LSTMNet(self.hidden, self.hidden, dropout=self.dropout)
         self.rnn_p = LSTMNet(self.hidden, self.hidden, dropout=self.dropout)
-        self.merge = MergeLayer(self.hidden, self.hidden, self.hidden, self.hidden)
+        self.merge = MergeLayer(self.hidden, self.hidden, self.hidden, self.hidden, self.hidden)
         self.linear = Linear(self.feature_dim, self.hidden, dropout=self.dropout)
         self.MLP = MLP(self.hidden, self.dropout)
+        self.BiGraphAgg = GCN(self.hidden, self.hidden * 2, self.hidden, dropout=self.dropout)
         if self.gsl:
             self.GSL = GSL(self.hidden)
         self.attention_model = TemporalAttentionLayer(
@@ -89,11 +94,23 @@ class MLN(torch.nn.Module):
         shape = torch.Size(sparse_mx.shape)
         return torch.sparse.FloatTensor(indices, values, shape)
 
+
+    def get_degree_diag(self, bi_adj):
+        total_degree = np.array(np.sum(bi_adj, axis=0))
+        for i in range(total_degree.shape[0]):
+            if (total_degree[i] < 1e-6):
+                total_degree[i] += 1.
+        degree_node = np.diag(total_degree.flatten())
+        degree_node = np.linalg.inv(degree_node)
+
     def loadData(self, date):
         features = self.node_feature[date]
         adj_v = self.adj_viewer[date]
         adj_p = self.adj_period[date]
         channels = self.nodes[date]
+
+        adj_bi = self.bi_graph[date]
+        viewer_features = self.viewer_feature
 
         #print(features.shape, features[:3])
 
@@ -106,9 +123,12 @@ class MLN(torch.nn.Module):
         adj_p = adj_p + adj_p.T.multiply(adj_p.T > adj_p) - adj_p.multiply(adj_p.T > adj_p)
         adj_p = self.normalize(adj_p + sp.eye(adj_p.shape[0]))
 
+        adj_bi = self.normalize(adj_bi + sp.eye(adj_bi.shape[0]))
+
         adj_d = self.adj_description  # + np.diag(len(self.nodelist))
 
         features = self.normalize(features)
+        viewer_features = self.normalize(viewer_features)
         #target = self.labels.query('date == @date & channelId in @channels').copy()
         #sort_map = pd.DataFrame({'channelId': channels, }).reset_index().set_index('channelId')
 
@@ -116,6 +136,7 @@ class MLN(torch.nn.Module):
         #target.sort_values('map')
 
         features = self.sparse_mx_to_torch_sparse_tensor(features).to(self.device)
+        viewer_features = self.sparse_mx_to_torch_sparse_tensor(viewer_features).to(self.device)
 
         adj_v = self.sparse_mx_to_torch_sparse_tensor(adj_v).to(self.device)
         adj_p = self.sparse_mx_to_torch_sparse_tensor(adj_p).to(self.device)
@@ -123,10 +144,10 @@ class MLN(torch.nn.Module):
 
 
 
-        return adj_v, adj_p, adj_d, features, channels
+        return adj_v, adj_p, adj_d, features, channels, adj_bi, viewer_features
 
     def get_embedding(self, date):
-        adj_v_ori, adj_p_ori, adj_d, features, channels = self.loadData(date)
+        adj_v_ori, adj_p_ori, adj_d, features, channels, adj_bi, viewer_features = self.loadData(date)
 
         if self.gsl:
             adj_re = self.GSL(torch.from_numpy(self.hidden_embedding).to(self.device))
@@ -141,9 +162,12 @@ class MLN(torch.nn.Module):
             adj_p = adj_p_ori
 
         hidden_embedding_f = self.linear(features)
+        hidden_embedding_vf = self.linear(viewer_features)
 
         z_v = self.model_v(hidden_embedding_f, adj_v)
         z_p = self.model_p(hidden_embedding_f, adj_p)
+
+        z_bi = self.BiGraphAgg(adj_bi, hidden_embedding_vf)
 
 
 
@@ -165,12 +189,12 @@ class MLN(torch.nn.Module):
         '''
         # Multi-head attention
 
-        hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
-        hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
+        #hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+        #hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
 
         #hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
         #hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
-        hidden_embedding = self.merge(hidden_embedding_v, hidden_embedding_p)
+        hidden_embedding = self.merge(hidden_embedding_v, hidden_embedding_p, z_bi)
 
 
 

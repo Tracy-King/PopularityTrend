@@ -254,6 +254,11 @@ def target(date_concat, p, label_concat):
             for date in label_concat], ignore_index=True)
         df = pd.merge(df, hrs, how='left', on=['channelId', 'date'])
 
+        df_viewer = pd.concat([
+            pd.read_csv('results/resultViewer_{}_{}.csv'.format(p, date), index_col=0)
+            for date in label_concat], ignore_index=True)
+
+
     elif p =='w':
         c_list = []
         for date in label_concat:
@@ -304,7 +309,7 @@ def target(date_concat, p, label_concat):
     target.to_csv('label_{}.csv'.format(p))
     node_features.to_csv('node_features_{}.csv'.format(p))
 
-    return target, node_features
+    return target, node_features, df_viewer
 
 
 if __name__ == "__main__":
