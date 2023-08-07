@@ -239,10 +239,11 @@ def channelFeatures(df):
     return nodeFeature
 
 def target(date_concat, p, label_concat):
-    if os.path.isfile('label_{}.csv'.format(p)) and os.path.isfile('node_features_{}.csv'.format(p)):
+    if os.path.isfile('label_{}.csv'.format(p)) and os.path.isfile('viewer_features_{}.csv'.format(p)):
         target = pd.read_csv('label_{}.csv'.format(p), index_col=0)
         node_features = pd.read_csv('node_features_{}.csv'.format(p), index_col=0)
-        return target, node_features
+        df_viewer = pd.read_csv('viewer_features_{}.csv'.format(p), index_col=0)
+        return target, node_features, df_viewer
 
 
     if p == 'm':
@@ -255,14 +256,17 @@ def target(date_concat, p, label_concat):
         df = pd.merge(df, hrs, how='left', on=['channelId', 'date'])
 
         df_viewer = pd.concat([
-            pd.read_csv('results/resultViewer_{}_{}.csv'.format(p, date), index_col=0)
+            pd.read_csv('BiGraph/resultViewer_{}_{}.csv'.format(p, date), index_col=0)
             for date in label_concat], ignore_index=True)
 
 
     elif p =='w':
         c_list = []
+        cv_list = []
         for date in label_concat:
             tmp = pd.read_csv('results/result_{}_{}.csv'.format(p, date), index_col=0)
+            tmp_v = pd.read_csv('BiGraph/resultViewer_{}_{}.csv'.format(p, date), index_col=0)
+
             hrs = pd.concat([pd.read_csv(h, index_col=0)
                              for h in glob.glob('hrs/hrs_{}-*.csv'.format(date))], ignore_index=True)
             tmp = pd.merge(tmp, hrs, how='left', on=['channelId', 'date'])
@@ -274,11 +278,19 @@ def target(date_concat, p, label_concat):
             tmp['filename'] = tmp['date'].map(sort_map['filename'])
             tmp = tmp.drop(['date'], axis=1)
             tmp = tmp.rename(columns={'filename': 'date'})
+
+            tmp_v['filename'] = tmp_v['date'].map(sort_map['filename'])
+            tmp_v = tmp_v.drop(['date'], axis=1)
+            tmp_v = tmp_v.rename(columns={'filename': 'date'})
             #print(sort_map)
             #print(tmp.head(5))
             c_list.append(tmp)
+            cv_list.append(tmp_v)
 
         df = pd.concat(c_list, ignore_index=True)
+        df_viewer = pd.concat(cv_list, ignore_index=True)
+
+
 
 
     df['target'] = df.groupby(['channelId'])['totalSC'].shift(-1)
@@ -308,6 +320,7 @@ def target(date_concat, p, label_concat):
     '''
     target.to_csv('label_{}.csv'.format(p))
     node_features.to_csv('node_features_{}.csv'.format(p))
+    df_viewer.to_csv('viewer_features_{}.csv'.format(p))
 
     return target, node_features, df_viewer
 
