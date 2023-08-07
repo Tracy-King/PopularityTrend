@@ -161,6 +161,8 @@ def dataGenerationViewers(dateList, df, sc_df):
         linkedChannels = tmp_sc.groupby(['authorChannelId', 'channelId'])['amount'].sum()
         print(linkedChannels[:10])
 
+        linkedChannels.to_csv('linkedChannels_{}_{}.csv'.format(PERIOD, date))
+
 
         '''
         print(chats)
@@ -192,7 +194,7 @@ def dataGenerationViewers(dateList, df, sc_df):
         print('Date {} finished.'.format(date))
         break
 
-    return result, linkedChannels
+    return result
 
 
 
@@ -228,19 +230,19 @@ def read_data(chat_f, sc_f, mode='d'):
     print(dateList)
 
     #result = dataGeneration(dateList, df, sc_df)
-    result, linkedChannels = dataGenerationViewers(dateList, df, sc_df)
+    result = dataGenerationViewers(dateList, df, sc_df)
 
-    return result.convert_dtypes(), linkedChannels.convert_dtypes()
+    return result.convert_dtypes()
 
 
 def main():
     chat = 'parquets/chats_{}.parquet'.format(START)
     sc = 'parquets/superchats_{}.parquet'.format(START)
 
-    result, linkedChannels = read_data(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
+    result = read_data(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
 
     result.to_csv('resultViewer_{}_{}.csv'.format(PERIOD, START))
-    linkedChannels.to_csv('linkedChannels_{}_{}.csv'.format(PERIOD, START))
+
 
 
 main()
