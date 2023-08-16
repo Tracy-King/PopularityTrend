@@ -246,6 +246,7 @@ def target(date_concat, p, label_concat):
         return target, node_features, df_viewer
 
 
+
     if p == 'm':
         df = pd.concat([
             pd.read_csv('results/result_{}_{}.csv'.format(p, date), index_col=0)
@@ -273,12 +274,18 @@ def target(date_concat, p, label_concat):
 
             dates = tmp['date'].drop_duplicates().tolist()
             filenames = [date+'-{}'.format(i) for i in range(len(dates))]
+            #print(dates)
 
             sort_map = pd.DataFrame({'date': dates, 'filename': filenames}).reset_index().set_index('date')
             tmp['filename'] = tmp['date'].map(sort_map['filename'])
             tmp = tmp.drop(['date'], axis=1)
             tmp = tmp.rename(columns={'filename': 'date'})
 
+            dates = tmp_v['date'].drop_duplicates().tolist()
+            filenames = [date + '-{}'.format(i) for i in range(len(dates))]
+            #print(dates)
+
+            sort_map = pd.DataFrame({'date': dates, 'filename': filenames}).reset_index().set_index('date')
             tmp_v['filename'] = tmp_v['date'].map(sort_map['filename'])
             tmp_v = tmp_v.drop(['date'], axis=1)
             tmp_v = tmp_v.rename(columns={'filename': 'date'})

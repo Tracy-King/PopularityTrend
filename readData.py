@@ -56,8 +56,11 @@ def DF2BiAdj(nodeList, viewer_list, bi_graph_df, period, date):
 
     sp_adj = sp.csr_matrix(adj, dtype=np.float32)
 
+    #print(date)
+    #print(adj.shape)
+
     sp.save_npz('BiGraph/linkedChannelsAdj_{}_{}.npz'.format(period, date), sp_adj)
-    print('BiGraph/linkedChannelsAdj_{}_{}.npz'.format(period, date))
+    #print('BiGraph/linkedChannelsAdj_{}_{}.npz'.format(period, date))
 
     return sp_adj
 

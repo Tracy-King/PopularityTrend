@@ -21,7 +21,7 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
-parser.add_argument('--period', type=str, default="m", choices=[
+parser.add_argument('--period', type=str, default="w", choices=[
     "d", "w", "m"], help='Period of data separation(day, week, month)')
 parser.add_argument('--epochs', type=int, default=20,
                     help='Number of epochs to train.')          # straight_5_18  attn_3_29
@@ -40,7 +40,7 @@ parser.add_argument('--alpha', type=float, default=0.5,
                     help='Hyper-parameter for graph structure learning.')
 parser.add_argument('--la', type=float, default=0.1,
                     help='Hyper-parameter for GSL constraints.')
-parser.add_argument('--train_window', type=int, default=8,
+parser.add_argument('--train_window', type=int, default=40,
                     help='Hyper-parameter for GSL constraints.')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
