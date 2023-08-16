@@ -19,6 +19,19 @@ class GCN(nn.Module):
         return x
 
 
+
+class BiGCN(nn.Module):
+    def __init__(self, nfeat, nhid, dropout):
+        super(BiGCN, self).__init__()
+        self.gc1 = GraphConvolution(nfeat, nhid)
+        self.dropout = dropout
+
+    def forward(self, x, adj):
+        x = F.relu(self.gc1(x, adj))
+        x = F.dropout(x, self.dropout, training=self.training)
+        return x
+
+
 class MergeLayer(torch.nn.Module):
   def __init__(self, dim1, dim2, dim3, dim4, dim5):
     super().__init__()

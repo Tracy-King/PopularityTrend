@@ -1,0 +1,175 @@
+INFO:root:Namespace(aggregator='mean', backprop_every=1, bs=5000, data='97DWg8tqo4M', dataset_r1=0.95, dataset_r2=0.95, different_new_nodes=False, drop_out=0.1, embedding_module='graph_attention', gpu=0, label='superchat', lr=0.005, memory_dim=128, memory_update_at_end=False, message_dim=100, message_function='identity', n_decoder=1, n_degree=20, n_epoch=5, n_head=2, n_layer=1, n_neg=1, n_runs=1, new_node=False, node_dim=100, original_decoder=False, original_encoder=True, patience=5, prefix='tgn-attn-origin', randomize_features=False, time_dim=100, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, use_validation=False)
+DEBUG:root:Num of training instances: 3606252
+DEBUG:root:Num of batches per epoch: 722
+INFO:root:Loading saved TGN model
+INFO:root:TGN models loaded
+INFO:root:Start training node classification task
+INFO:root:Epoch 0: train loss: 0.12058286579361913, val auc: 0.7985122157194315, val acc: 0.9510017329557462, val rec: 0.017558886509635975, val pre: 0.6259541984732825, val cm: [[179834   9176]
+ [    98    164]], time: 538.5057799816132
+INFO:root:Epoch 1: train loss: 0.12267504062844116, val auc: 0.4627917824938379, val acc: 0.9443921974724206, val rec: 0.0, val pre: 0.0, val cm: [[178747  10263]
+ [   262      0]], time: 557.5068621635437
+INFO:root:Epoch 2: train loss: 0.11527989967790667, val auc: 0.5949811209956579, val acc: 0.8256001944291813, val rec: 0.0, val pre: 0.0, val cm: [[156263  32747]
+ [   262      0]], time: 557.9532971382141
+INFO:root:Epoch 3: train loss: 0.11407382167112134, val auc: 0.7724492342785692, val acc: 0.9191375375121518, val rec: 0.011432283208834037, val pre: 0.6717557251908397, val cm: [[173791  15219]
+ [    86    176]], time: 557.1435551643372
+INFO:root:Epoch 4: train loss: 0.11540000444056255, val auc: 0.8416831412853879, val acc: 0.80296081829325, val rec: 0.005950157425689738, val pre: 0.851145038167939, val cm: [[151755  37255]
+ [    39    223]], time: 579.8313322067261
+INFO:root:test auc: 0.8416831412853879,val acc: 0.80296081829325, val rec: 0.005950157425689738, val pre: 0.851145038167939, val cm: [[151755  37255]
+ [    39    223]]
+binary
+Edge feature loaded!
+{0, 1}
+{0, 1}
+[0.20225964 0.02083405 0.52193475 ... 0.57222033 0.33842364 0.57222033]
+{0, 1}
+{0, 1}
+[0.02538591 0.02959171 0.50537491 ... 0.06456321 0.02311055 0.06456321]
+{0, 1}
+{0, 1}
+[0.07774852 0.01428248 0.61100328 ... 0.2975381  0.00178189 0.2975381 ]
+{0, 1}
+{0, 1}
+[0.05585628 0.01512304 0.63338059 ... 0.6034798  0.03916401 0.6034798 ]
+{0, 1}
+{0, 1}
+[0.15342762 0.02187938 0.64948559 ... 0.92661422 0.141394   0.92661422]
+INFO:root:Namespace(aggregator='mean', backprop_every=1, bs=5000, data='97DWg8tqo4M', dataset_r1=0.95, dataset_r2=0.95, different_new_nodes=False, drop_out=0.1, embedding_module='graph_attention', gpu=0, label='superchat', lr=0.005, memory_dim=128, memory_update_at_end=False, message_dim=100, message_function='identity', n_decoder=10, n_degree=20, n_epoch=5, n_head=2, n_layer=1, n_neg=1, n_runs=1, new_node=False, node_dim=100, original_decoder=False, original_encoder=True, patience=5, prefix='tgn-attn-origin', randomize_features=False, time_dim=100, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, use_validation=False)
+DEBUG:root:Num of training instances: 3606252
+DEBUG:root:Num of batches per epoch: 722
+INFO:root:Loading saved TGN model
+INFO:root:TGN models loaded
+INFO:root:Start training node classification task
+INFO:root:Epoch 0: train loss: 1.0746201047070139, val auc: 0.8852966299694955, val acc: 0.918963185257196, val rec: 0.01241914618369987, val pre: 0.732824427480916, val cm: [[173742  15268]
+ [    70    192]], time: 595.4977722167969
+INFO:root:Epoch 1: train loss: 1.106066956373133, val auc: 0.9315970599721893, val acc: 0.9890950589627626, val rec: 0.05571992110453649, val pre: 0.4312977099236641, val cm: [[187095   1915]
+ [   149    113]], time: 608.3122811317444
+INFO:root:Epoch 2: train loss: 1.092912967969506, val auc: 0.9529635533642349, val acc: 0.9537068346083942, val rec: 0.021611886537595677, val pre: 0.732824427480916, val cm: [[180318   8692]
+ [    70    192]], time: 602.7106924057007
+INFO:root:Epoch 3: train loss: 1.0902280100309123, val auc: 0.9448077184817153, val acc: 0.9235333276977049, val rec: 0.0131551901336074, val pre: 0.732824427480916, val cm: [[174607  14403]
+ [    70    192]], time: 602.7530770301819
+INFO:root:Epoch 4: train loss: 1.0839228098102718, val auc: 0.9381822158123222, val acc: 0.9090673739380363, val rec: 0.010172822380209237, val pre: 0.6717557251908397, val cm: [[171885  17125]
+ [    86    176]], time: 603.5239315032959
+INFO:root:test auc: 0.9381822158123222,val acc: 0.9090673739380363, val rec: 0.010172822380209237, val pre: 0.6717557251908397, val cm: [[171885  17125]
+ [    86    176]]
+binary
+Edge feature loaded!
+{0, 1}
+{0, 1}
+[0.22002116 0.11611756 0.54447162 ... 0.64923203 0.21085748 0.64923203]
+{0, 1}
+{0, 1}
+[0.15540555 0.10324232 0.51671529 ... 0.45125723 0.13982347 0.45125723]
+{0, 1}
+{0, 1}
+[0.10969432 0.0772004  0.57986051 ... 0.61190444 0.05300979 0.61190444]
+{0, 1}
+{0, 1}
+[0.0642547  0.04529766 0.61040908 ... 0.63558072 0.15781024 0.63558072]
+{0, 1}
+{0, 1}
+[0.0560142  0.02674661 0.65578514 ... 0.69540584 0.06233479 0.69540584]
+INFO:root:Namespace(aggregator='mean', backprop_every=1, bs=5000, data='97DWg8tqo4M', dataset_r1=0.95, dataset_r2=0.95, different_new_nodes=False, drop_out=0.1, embedding_module='graph_attention', gpu=0, label='superchat', lr=0.005, memory_dim=128, memory_update_at_end=False, message_dim=100, message_function='identity', n_decoder=30, n_degree=20, n_epoch=5, n_head=2, n_layer=1, n_neg=1, n_runs=1, new_node=False, node_dim=100, original_decoder=False, original_encoder=True, patience=5, prefix='tgn-attn-origin', randomize_features=False, time_dim=100, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, use_validation=False)
+DEBUG:root:Num of training instances: 3606252
+DEBUG:root:Num of batches per epoch: 722
+INFO:root:Loading saved TGN model
+INFO:root:TGN models loaded
+INFO:root:Start training node classification task
+INFO:root:Epoch 0: train loss: 3.2256080611425753, val auc: 0.9439805479010561, val acc: 0.9785176888287755, val rec: 0.037900874635568516, val pre: 0.5954198473282443, val cm: [[185050   3960]
+ [   106    156]], time: 659.8484261035919
+INFO:root:Epoch 1: train loss: 3.2713320755562294, val auc: 0.9361391073051993, val acc: 0.9893856460543556, val rec: 0.042909471480900054, val pre: 0.31297709923664124, val cm: [[187181   1829]
+ [   180     82]], time: 663.0179097652435
+INFO:root:Epoch 2: train loss: 3.2375332294057775, val auc: 0.9340295618269723, val acc: 0.9424584724629105, val rec: 0.017433941705257423, val pre: 0.732824427480916, val cm: [[178189  10821]
+ [    70    192]], time: 654.9467985630035
+INFO:root:Epoch 3: train loss: 3.2045825197931554, val auc: 0.921370087854312, val acc: 0.9389185933471407, val rec: 0.01643413506804759, val pre: 0.732824427480916, val cm: [[177519  11491]
+ [    70    192]], time: 609.155707359314
+INFO:root:Epoch 4: train loss: 3.229508068804678, val auc: 0.9125014791818035, val acc: 0.9240563844625724, val rec: 0.013245033112582781, val pre: 0.732824427480916, val cm: [[174706  14304]
+ [    70    192]], time: 601.1693451404572
+INFO:root:test auc: 0.9125014791818035,val acc: 0.9240563844625724, val rec: 0.013245033112582781, val pre: 0.732824427480916, val cm: [[174706  14304]
+ [    70    192]]
+binary
+Edge feature loaded!
+{0, 1}
+{0, 1}
+[0.17111045 0.18307713 0.50704104 ... 0.50017869 0.16545059 0.50017869]
+{0, 1}
+{0, 1}
+[0.13562748 0.12478908 0.51657993 ... 0.47809792 0.092811   0.47809792]
+{0, 1}
+{0, 1}
+[0.10072487 0.08023027 0.5374738  ... 0.60922217 0.07907756 0.60922217]
+{0, 1}
+{0, 1}
+[0.06530935 0.05349804 0.58613449 ... 0.61077029 0.04062082 0.61077029]
+{0, 1}
+{0, 1}
+[0.05044486 0.03898879 0.56318611 ... 0.75098443 0.00917465 0.75098443]
+INFO:root:Namespace(aggregator='mean', backprop_every=1, bs=5000, data='97DWg8tqo4M', dataset_r1=0.95, dataset_r2=0.95, different_new_nodes=False, drop_out=0.1, embedding_module='graph_attention', gpu=0, label='superchat', lr=0.005, memory_dim=128, memory_update_at_end=False, message_dim=100, message_function='identity', n_decoder=70, n_degree=20, n_epoch=5, n_head=2, n_layer=1, n_neg=1, n_runs=1, new_node=False, node_dim=100, original_decoder=False, original_encoder=True, patience=5, prefix='tgn-attn-origin', randomize_features=False, time_dim=100, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, use_validation=False)
+DEBUG:root:Num of training instances: 3606252
+DEBUG:root:Num of batches per epoch: 722
+INFO:root:Loading saved TGN model
+INFO:root:TGN models loaded
+INFO:root:Start training node classification task
+INFO:root:Epoch 0: train loss: 7.373667279242891, val auc: 0.9118460754328196, val acc: 0.9946954647280105, val rec: 0.0, val pre: 0.0, val cm: [[188268    742]
+ [   262      0]], time: 700.097749710083
+INFO:root:Epoch 1: train loss: 7.652095457791787, val auc: 0.9097999782716775, val acc: 0.9915729743438015, val rec: 0.012435991221653255, val pre: 0.0648854961832061, val cm: [[187660   1350]
+ [   245     17]], time: 699.6006646156311
+INFO:root:Epoch 2: train loss: 7.5511992507075005, val auc: 0.9342266312497702, val acc: 0.9759393888160953, val rec: 0.03469210754553339, val pre: 0.6106870229007634, val cm: [[184558   4452]
+ [   102    160]], time: 699.5610072612762
+INFO:root:Epoch 3: train loss: 7.56106302356786, val auc: 0.944518182526794, val acc: 0.9424531890612452, val rec: 0.01602622473137862, val pre: 0.6717557251908397, val cm: [[178204  10806]
+ [    86    176]], time: 698.1504311561584
+INFO:root:Epoch 4: train loss: 7.572829345308265, val auc: 0.9439265299990186, val acc: 0.9205587725601251, val rec: 0.012666578704314554, val pre: 0.732824427480916, val cm: [[174044  14966]
+ [    70    192]], time: 697.1313524246216
+INFO:root:test auc: 0.9439265299990186,val acc: 0.9205587725601251, val rec: 0.012666578704314554, val pre: 0.732824427480916, val cm: [[174044  14966]
+ [    70    192]]
+binary
+Edge feature loaded!
+{0, 1}
+{0, 1}
+[0.18488786 0.18497673 0.53192455 ... 0.41072422 0.13251503 0.41072422]
+{0, 1}
+{0, 1}
+[0.13273056 0.12120657 0.54619509 ... 0.47185281 0.09187493 0.47185281]
+{0, 1}
+{0, 1}
+[0.09571807 0.08283803 0.57863849 ... 0.5593093  0.06250326 0.5593093 ]
+{0, 1}
+{0, 1}
+[0.07257107 0.0545239  0.59256911 ... 0.64958519 0.06075723 0.64958519]
+{0, 1}
+{0, 1}
+[0.05566794 0.03682246 0.59723306 ... 0.73121846 0.07532996 0.73121846]
+INFO:root:Namespace(aggregator='mean', backprop_every=1, bs=5000, data='97DWg8tqo4M', dataset_r1=0.95, dataset_r2=0.95, different_new_nodes=False, drop_out=0.1, embedding_module='graph_attention', gpu=0, label='superchat', lr=0.005, memory_dim=128, memory_update_at_end=False, message_dim=100, message_function='identity', n_decoder=90, n_degree=20, n_epoch=5, n_head=2, n_layer=1, n_neg=1, n_runs=1, new_node=False, node_dim=100, original_decoder=False, original_encoder=True, patience=5, prefix='tgn-attn-origin', randomize_features=False, time_dim=100, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, use_validation=False)
+DEBUG:root:Num of training instances: 3606252
+DEBUG:root:Num of batches per epoch: 722
+INFO:root:Loading saved TGN model
+INFO:root:TGN models loaded
+INFO:root:Start training node classification task
+INFO:root:Epoch 0: train loss: 9.557161150856196, val auc: 0.9079195494725228, val acc: 0.9941988249714696, val rec: 0.0, val pre: 0.0, val cm: [[188174    836]
+ [   262      0]], time: 736.7656514644623
+INFO:root:Epoch 1: train loss: 9.763569407753254, val auc: 0.9355984638318341, val acc: 0.9812386406864195, val rec: 0.037672195670508855, val pre: 0.5114503816793893, val cm: [[185587   3423]
+ [   128    134]], time: 743.4399700164795
+INFO:root:Epoch 2: train loss: 9.682575705732088, val auc: 0.9393384008520087, val acc: 0.9489781901179255, val rec: 0.019633909397688925, val pre: 0.732824427480916, val cm: [[179423   9587]
+ [    70    192]], time: 739.1654813289642
+INFO:root:Epoch 3: train loss: 9.671336505169931, val auc: 0.9308097515741927, val acc: 0.9381419333023374, val rec: 0.014917782675029667, val pre: 0.6717557251908397, val cm: [[177388  11622]
+ [    86    176]], time: 735.668616771698
+INFO:root:Epoch 4: train loss: 9.734455945063125, val auc: 0.9403865904748366, val acc: 0.9323671752821336, val rec: 0.014857231293043411, val pre: 0.732824427480916, val cm: [[176279  12731]
+ [    70    192]], time: 742.6309056282043
+INFO:root:test auc: 0.9403865904748366,val acc: 0.9323671752821336, val rec: 0.014857231293043411, val pre: 0.732824427480916, val cm: [[176279  12731]
+ [    70    192]]
+binary
+Edge feature loaded!
+{0, 1}
+{0, 1}
+[0.19510835 0.17941025 0.53090572 ... 0.42777443 0.13491496 0.42777443]
+{0, 1}
+{0, 1}
+[0.14031401 0.12106313 0.55626202 ... 0.51612139 0.09763792 0.51612139]
+{0, 1}
+{0, 1}
+[0.10000686 0.0721499  0.5590837  ... 0.62607616 0.07949294 0.62607616]
+{0, 1}
+{0, 1}
+[0.07729134 0.05075862 0.58049518 ... 0.65487218 0.04359533 0.65487218]
+{0, 1}
+{0, 1}
+[0.06004972 0.03673317 0.59596795 ... 0.67788887 0.05456015 0.67788887]

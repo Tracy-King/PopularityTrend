@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import torch
 import scipy.sparse as sp
-from models import GCN, LSTMNet, Linear, MLP, GSL, MergeLayer
+from models import GCN, LSTMNet, Linear, MLP, GSL, MergeLayer, BiGCN
 from layers import TemporalAttentionLayer, BiGraphAgg
 
 
@@ -30,6 +30,7 @@ class MLN(torch.nn.Module):
         self.perf = perf
         self.gsl = gsl
         self.alpha = alpha
+        self.bigraph_dim = 64668
 
         #self.node_embedding_dict = dict()
         #self.y_pred_dict = dict()
@@ -47,8 +48,9 @@ class MLN(torch.nn.Module):
         self.rnn_p = LSTMNet(self.hidden, self.hidden, dropout=self.dropout)
         self.merge = MergeLayer(self.hidden, self.hidden, self.hidden, self.hidden, self.hidden)
         self.linear = Linear(self.feature_dim, self.hidden, dropout=self.dropout)
+        self.viewerLinear = Linear(self.viewer_feature_dim, self.hidden, dropout=self.dropout)
         self.MLP = MLP(self.hidden, self.dropout)
-        self.BiGraphAgg = GCN(self.hidden, self.hidden * 2, self.hidden, dropout=self.dropout)
+        self.BiGraphAgg = BiGCN(self.hidden, self.hidden, dropout=self.dropout)
         if self.gsl:
             self.GSL = GSL(self.hidden)
         self.attention_model = TemporalAttentionLayer(
@@ -110,7 +112,7 @@ class MLN(torch.nn.Module):
         channels = self.nodes[date]
 
         adj_bi = self.bi_graph[date]
-        viewer_features = self.viewer_feature
+        viewer_features = self.viewer_feature[date]
 
         #print(features.shape, features[:3])
 
@@ -123,7 +125,9 @@ class MLN(torch.nn.Module):
         adj_p = adj_p + adj_p.T.multiply(adj_p.T > adj_p) - adj_p.multiply(adj_p.T > adj_p)
         adj_p = self.normalize(adj_p + sp.eye(adj_p.shape[0]))
 
-        adj_bi = self.normalize(adj_bi + sp.eye(adj_bi.shape[0]))
+        #print(adj_bi.shape)
+
+        #adj_bi = self.normalize(adj_bi + sp.eye(adj_bi.shape[0]))
 
         adj_d = self.adj_description  # + np.diag(len(self.nodelist))
 
@@ -140,6 +144,7 @@ class MLN(torch.nn.Module):
 
         adj_v = self.sparse_mx_to_torch_sparse_tensor(adj_v).to(self.device)
         adj_p = self.sparse_mx_to_torch_sparse_tensor(adj_p).to(self.device)
+        adj_bi = self.sparse_mx_to_torch_sparse_tensor(adj_bi).to(self.device)
         adj_d = torch.FloatTensor(adj_d).to(self.device)
 
 
@@ -162,12 +167,13 @@ class MLN(torch.nn.Module):
             adj_p = adj_p_ori
 
         hidden_embedding_f = self.linear(features)
-        hidden_embedding_vf = self.linear(viewer_features)
+        hidden_embedding_vf = self.viewerLinear(viewer_features)
 
         z_v = self.model_v(hidden_embedding_f, adj_v)
         z_p = self.model_p(hidden_embedding_f, adj_p)
 
-        z_bi = self.BiGraphAgg(adj_bi, hidden_embedding_vf)
+        #print(adj_bi.shape, hidden_embedding_vf.shape)
+        z_bi = self.BiGraphAgg(hidden_embedding_vf, adj_bi)
 
 
 

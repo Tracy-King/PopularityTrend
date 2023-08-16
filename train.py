@@ -10,6 +10,10 @@ from MLN import MLN
 from utils import EarlyStopMonitor, evaluation, get_norm
 import matplotlib.pyplot as plt
 import os
+import warnings
+
+
+warnings.filterwarnings("ignore")
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 
 # pd.set_option('display.max_columns', None)
@@ -17,13 +21,13 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
-parser.add_argument('--period', type=str, default="w", choices=[
+parser.add_argument('--period', type=str, default="m", choices=[
     "d", "w", "m"], help='Period of data separation(day, week, month)')
-parser.add_argument('--epochs', type=int, default=10,
+parser.add_argument('--epochs', type=int, default=20,
                     help='Number of epochs to train.')          # straight_5_18  attn_3_29
 parser.add_argument('--prefix', type=str, default='straight_5_18', help='Prefix to name the checkpoints')
 parser.add_argument('--coldstart', type=int, default=0, help='Number of data for pretraining')
-parser.add_argument('--lr', type=float, default=0.001,
+parser.add_argument('--lr', type=float, default=0.01,
                     help='Initial learning rate.')
 parser.add_argument('--weight_decay', type=float, default=1e-2,
                     help='Weight decay (L2 loss on parameters).')
@@ -36,13 +40,13 @@ parser.add_argument('--alpha', type=float, default=0.5,
                     help='Hyper-parameter for graph structure learning.')
 parser.add_argument('--la', type=float, default=0.1,
                     help='Hyper-parameter for GSL constraints.')
-parser.add_argument('--train_window', type=int, default=6,
+parser.add_argument('--train_window', type=int, default=8,
                     help='Hyper-parameter for GSL constraints.')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
 parser.add_argument('--perf', action='store_true', default=True,
                     help='Percentage label.')
-parser.add_argument('--gsl', action='store_true', default=True,
+parser.add_argument('--gsl', action='store_true', default=False,
                     help='Using graph structure learning.')
 
 
@@ -196,10 +200,10 @@ for epoch in range(args.epochs):
 
         with torch.no_grad():
             rmse, mape, r2, mae = evaluation(y_pred, y_true)
-        logger.info('Validation-----------------'.format(tmp_test_datelist))
-        logger.info('Date: {}'.format(tmp_test_datelist))
-        logger.info('Loss: {:.4f}'.format(loss_val.item()))
-        logger.info('RMSE: {:.4f}, MAPE: {:.4f}, R2_score: {:.4f}, MAE: {:.4f}'.format(rmse, mape, r2, mae))
+        #logger.info('Validation-----------------'.format(tmp_test_datelist))
+        #logger.info('Date: {}'.format(tmp_test_datelist))
+        #logger.info('Loss: {:.4f}'.format(loss_val.item()))
+        #logger.info('RMSE: {:.4f}, MAPE: {:.4f}, R2_score: {:.4f}, MAE: {:.4f}'.format(rmse, mape, r2, mae))
 
 
         avg_test_rmse[epoch] += rmse
@@ -221,13 +225,13 @@ for epoch in range(args.epochs):
 
     with torch.no_grad():
         rmse, mape, r2, mae = evaluation(y_pred, y_true)
-    logger.info('Validation-----------------'.format(datelist[-2]))
-    logger.info('Date: {}'.format(datelist[-2]))
-    logger.info('Loss: {:.4f}'.format(loss_val.item()))
-    logger.info('RMSE: {:.4f}, MAPE: {:.4f}, R2_score: {:.4f}, MAE: {:.4f}'.format(rmse, mape, r2, mae))
+    #logger.info('Test-----------------'.format(datelist[-2]))
+    #logger.info('Date: {}'.format(datelist[-2]))
+    #logger.info('Loss: {:.4f}'.format(loss_val.item()))
+    #logger.info('RMSE: {:.4f}, MAPE: {:.4f}, R2_score: {:.4f}, MAE: {:.4f}'.format(rmse, mape, r2, mae))
 
-    logger.info("Optimization Finished!")
-    logger.info('Epoch {:04d} time: {:.4f}s'.format(epoch + 1, time.time() - t))
+    #logger.info("Optimization Finished!")
+    #logger.info('Epoch {:04d} time: {:.4f}s'.format(epoch + 1, time.time() - t))
 
     '''
     x = np.arange(y_pred.shape[0])

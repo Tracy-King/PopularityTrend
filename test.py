@@ -23,7 +23,7 @@ pd.set_option('display.max_columns', None)
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
-parser.add_argument('--period', type=str, default="m", choices=[
+parser.add_argument('--period', type=str, default="w", choices=[
   "d", "w", "m"], help='Period of data separation(day, week, month)')
 
 try:
@@ -161,7 +161,7 @@ def dataGenerationViewers(dateList, df, sc_df):
         linkedChannels = tmp_sc.groupby(['authorChannelId', 'channelId'])['amount'].sum()
         print(linkedChannels[:10])
 
-        linkedChannels.to_csv('linkedChannels_{}_{}.csv'.format(PERIOD, date))
+        linkedChannels.to_csv('linkedChannels_{}_{}.csv'.format(PERIOD, date.strftime('%Y-%m-%W')))
 
 
         '''
@@ -192,7 +192,6 @@ def dataGenerationViewers(dateList, df, sc_df):
                                    impact7.get(id, 0)]
 
         print('Date {} finished.'.format(date))
-        break
 
     return result
 
@@ -246,8 +245,25 @@ def main():
 
 
 main()
-
 '''
+chat_f = 'parquets/chats_{}.parquet'.format(START)
+df = pd.read_parquet(chat_f)
+
+df["timestamp"] = pd.to_datetime(df['timestamp'])  #, format='ISO8601'
+df.sort_index(inplace=False)
+df["timestamp"] = df["timestamp"].dt.to_period('w')
+
+dateList = df['timestamp'].drop_duplicates().tolist()
+
+print(dateList, type(dateList[0]))
+
+
+
+tmp = dateList[0].strftime('%Y-%m-%W')
+
+print(dateList[0], tmp)
+
+
 if __name__ == "__main__":
     period = 'w'
     date_concat, _, adj_viewer, adj_period, adj_description, labels, nodes, nodeList = readData.readData(period)
