@@ -21,10 +21,13 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
+parser.add_argument('--network', type=str, default="reddit",
+                    choices=['mooc', 'reddit', 'wikipedia'], help='Network name')
+parser.add_argument('--days', type=int, default=5, help='Days in a graph')
 parser.add_argument('--start', type=str, default="2021-04", help='Start date(e.g. 2021-04)')
 parser.add_argument('--period', type=str, default="w", choices=[
     "d", "w", "m"], help='Period of data separation(day, week, month)')
-parser.add_argument('--epochs', type=int, default=20,
+parser.add_argument('--epochs', type=int, default=30,
                     help='Number of epochs to train.')          # straight_5_18  attn_3_29
 parser.add_argument('--prefix', type=str, default='straight_5_18', help='Prefix to name the checkpoints')
 parser.add_argument('--coldstart', type=int, default=0, help='Number of data for pretraining')
@@ -41,7 +44,7 @@ parser.add_argument('--alpha', type=float, default=0.1,
                     help='Hyper-parameter for graph structure learning.')
 parser.add_argument('--la', type=float, default=0.1,
                     help='Hyper-parameter for GSL constraints.')
-parser.add_argument('--train_window', type=int, default=40,
+parser.add_argument('--train_window', type=int, default=6,
                     help='Hyper-parameter for GSL constraints.')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
@@ -101,7 +104,7 @@ device = torch.device(device_string)
 #    readData(PERIOD)
 
 datelist, node_feature, adj_viewer, adj_period, adj_description, labels, nodes, nodelist, viewer_feature, bi_graph = \
-    readNetwork('mooc', 4)
+    readNetwork(args.network, args.days)    # mooc reddit wikipedia
 
 
 
@@ -170,7 +173,7 @@ for epoch in range(args.epochs):
             #print(datelist[k])
             #print(len(nodes[datelist[k]]))
 
-            node_embedding, output, y_true, adj_v, adj_p = model.get_embedding(tmp_train_datelist[k])
+            node_embedding, output, y_true, adj_v, adj_p = model.get_embedding_network(tmp_train_datelist[k])
 
             #norm = np.array([norm_dict[x] for x in nodes[datelist[k]]])  # [0]: mu, [1]: sigma
             #y_true_n = (y_true - torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)) /\
@@ -198,7 +201,7 @@ for epoch in range(args.epochs):
         optimizer.step()
 
         model.eval()
-        node_embedding, output, y_true, adj_v, adj_p = model.get_embedding(tmp_test_datelist)
+        node_embedding, output, y_true, adj_v, adj_p = model.get_embedding_network(tmp_test_datelist)
 
 
         #norm = np.array([norm_dict[x] for x in nodes[datelist[-2]]])  # [0]: mu, [1]: sigma

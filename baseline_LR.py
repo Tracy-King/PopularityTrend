@@ -207,10 +207,10 @@ def NN(x, y, test_size, mean, std):
     for epoch in range(epochs):
         # Converting inputs and labels to Variable
         if torch.cuda.is_available():
-            inputs = Variable(torch.from_numpy(X_train).cuda())
+            inputs = Variable(torch.from_numpy(X_train).float().cuda())
             labels = Variable(torch.from_numpy(y_train).unsqueeze(1).cuda())
         else:
-            inputs = Variable(torch.from_numpy(X_train))
+            inputs = Variable(torch.from_numpy(X_train).float())
             labels = Variable(torch.from_numpy(y_train).unsqueeze(1))
         #print(inputs.shape, labels.shape)
         # Clear gradient buffers because we don't want any gradient from previous epoch to carry forward, dont want to cummulate gradients
@@ -247,9 +247,9 @@ def NN(x, y, test_size, mean, std):
 
     with torch.no_grad():  # we don't need gradients in the testing phase
         if torch.cuda.is_available():
-            y_pred = model(Variable(torch.from_numpy(X_test).cuda())).cpu().data.numpy()
+            y_pred = model(Variable(torch.from_numpy(X_test).float().cuda())).cpu().data.numpy()
         else:
-            y_pred = model(Variable(torch.from_numpy(X_test))).data.numpy()
+            y_pred = model(Variable(torch.from_numpy(X_test).float())).data.numpy()
 
         rmse = math.sqrt(mean_squared_error(y_test, y_pred))
         mape = mean_absolute_percentage_error(y_test, y_pred)

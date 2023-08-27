@@ -23,8 +23,8 @@ class MLN(torch.nn.Module):
 
         self.dropout = dropout
         self.hidden = hidden_dim
-        self.feature_dim = 11  #10 or 17   11  19
-        self.viewer_feature_dim = 8
+        self.feature_dim = list(self.node_feature.values())[0].shape[1]  #10 or 17   11  19
+        self.viewer_feature_dim = list(self.viewer_feature.values())[0].shape[1]
         self.n_nodes = len(self.nodelist)
         self.device = device
         self.perf = perf
@@ -113,6 +113,14 @@ class MLN(torch.nn.Module):
 
         adj_bi = self.bi_graph[date]
         viewer_features = self.viewer_feature[date]
+
+        if np.all(adj_v == adj_p):
+            features = sp.csr_matrix(features, dtype=np.float32)
+            viewer_features = sp.csr_matrix(viewer_features, dtype=np.float32)
+            adj_v = sp.csr_matrix(adj_v, dtype=np.float32)
+            adj_p = sp.csr_matrix(adj_p, dtype=np.float32)
+            adj_bi = sp.csr_matrix(adj_bi, dtype=np.float32)
+
 
         #print(features.shape, features[:3])
 
@@ -216,8 +224,10 @@ class MLN(torch.nn.Module):
         node_idx = [self.nodelist.index(x) for x in channels]
 
         filtered_node_embedding = node_embedding[node_idx]
+        #print(filtered_node_embedding.shape, len(node_idx))
 
         filtered_y_pred = self.MLP(node_embedding[node_idx])
+
         tmp = self.labels.query('date == @date')
         if not self.perf:
             filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['target'].values
@@ -226,6 +236,111 @@ class MLN(torch.nn.Module):
             filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['perf'].values
                                                          for x in channels])).to(self.device)
 
+
+        #print(filtered_y_true)
+        valid_mask = (filtered_y_true < 2.0).nonzero()[:, 0]
+
+        #print(valid_mask)
+
+        filtered_y_true = torch.index_select(filtered_y_true, 0, valid_mask)
+        filtered_y_pred = torch.index_select(filtered_y_pred, 0, valid_mask)
+
+        #self.node_embedding_dict[date] = filtered_node_embedding
+        #self.y_pred_dict[date] = filtered_y_pred
+        #self.y_true_dict[date] = filtered_y_true
+
+        with torch.no_grad():
+            self.hidden_embedding = node_embedding.detach().cpu().numpy()
+            self.last_hidden_v = hidden_embedding_v.detach().cpu().numpy()
+            self.last_hidden_p = hidden_embedding_p.detach().cpu().numpy()
+            self.last_c_v = c_v.detach().cpu().numpy()
+            self.last_c_p = c_p.detach().cpu().numpy()
+        return filtered_node_embedding, filtered_y_pred.float(), filtered_y_true.float(),\
+               (adj_v - adj_v_ori).to_dense(), (adj_p - adj_p_ori).to_dense()
+
+
+    def get_embedding_network(self, date):
+        adj_v_ori, adj_p_ori, adj_d, features, channels, adj_bi, viewer_features = self.loadData(date)
+
+        if self.gsl:
+            adj_re = self.GSL(torch.from_numpy(self.hidden_embedding).to(self.device))
+            adj_re = adj_re + adj_re.T.multiply(adj_re.T > adj_re) - adj_re.multiply(adj_re.T > adj_re)
+            adj_re = self.normalize_tensor(adj_re + torch.eye(adj_re.shape[0]).to(self.device)).to_sparse()
+
+
+            adj_v = self.alpha * adj_v_ori + (1 - self.alpha) * adj_re
+            adj_p = self.alpha * adj_p_ori + (1 - self.alpha) * adj_re
+        else:
+            adj_v = adj_v_ori
+            adj_p = adj_p_ori
+
+        hidden_embedding_f = self.linear(features)
+        hidden_embedding_vf = self.viewerLinear(viewer_features)
+
+        z_v = self.model_v(hidden_embedding_f, adj_v)
+        z_p = self.model_p(hidden_embedding_f, adj_p)
+
+        #print(adj_bi.shape, hidden_embedding_vf.shape)
+        z_bi = self.BiGraphAgg(hidden_embedding_vf, adj_bi)
+
+
+
+        hidden_embedding_v, c_v = self.rnn_v(z_v,
+                                            torch.from_numpy(self.last_hidden_v).to(self.device),
+                                            torch.from_numpy(self.last_c_v).to(self.device))
+        hidden_embedding_p, c_p = self.rnn_v(z_p,
+                                            torch.from_numpy(self.last_hidden_p).to(self.device),
+                                            torch.from_numpy(self.last_c_p).to(self.device))
+
+
+        mask = hidden_embedding_v == 0
+
+        '''
+        # Straight
+        node_embedding = torch.from_numpy(self.hidden_embedding).to(self.device) + hidden_embedding_f + \
+                         torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+
+        '''
+        # Multi-head attention
+
+        #hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+        #hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
+
+        #hidden_embedding = torch.mm(adj_d, hidden_embedding_v) - torch.mm(adj_d, hidden_embedding_p)
+        #hidden_embedding = torch.mm(adj_d, self.merge(hidden_embedding_v, hidden_embedding_p))
+        hidden_embedding = self.merge(hidden_embedding_v, hidden_embedding_p, z_bi)
+
+
+
+        node_embedding = self.attention_model(torch.from_numpy(self.hidden_embedding).to(self.device),
+                                              hidden_embedding_f,
+                                              hidden_embedding,
+                                              mask)
+
+
+
+
+        #y_pred = self.MLP(node_embedding)
+        #node_idx = [self.nodelist.index(x) for x in channels]
+        node_idx = channels
+
+        filtered_node_embedding = node_embedding[node_idx]
+        #print(filtered_node_embedding.shape, len(node_idx))
+
+        filtered_y_pred = self.MLP(node_embedding[node_idx])
+        '''
+        tmp = self.labels.query('date == @date')
+        if not self.perf:
+            filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['target'].values
+                                                 for x in channels])).to(self.device)
+        else:
+            filtered_y_true = torch.from_numpy(np.array([tmp.query('channelId == @x')['perf'].values
+                                                         for x in channels])).to(self.device)
+        '''
+        tmp = self.labels[date]
+        filtered_y_true = torch.from_numpy(np.array([tmp[x] for x in node_idx])).to(self.device)
+
+        #print(filtered_y_true)
         valid_mask = (filtered_y_true < 2.0).nonzero()[:, 0]
 
         #print(valid_mask)

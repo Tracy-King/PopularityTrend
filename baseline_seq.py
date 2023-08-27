@@ -479,7 +479,7 @@ def LSTM(x, y, test_size, hidden_size=8, num_layers=3):
             r_out = self.dropout(r_out)
             out = torch.squeeze(self.out(r_out))
             #out = torch.gather(out, 1, len_idx)
-            print(out.shape)
+            #print(out.shape)
             return out, len_seq
 
     #X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
@@ -496,6 +496,7 @@ def LSTM(x, y, test_size, hidden_size=8, num_layers=3):
     print(X_train[0].shape, y_train[0].shape, X_test[0].shape, y_test[0].shape)
 
 
+
     mean = sum([x.mean(axis=0) for x in X_train])/len(X_train)
     X_train = [x - mean for x in X_train]  # 等价于 train_data = train_data - mean
     std = sum([x.std(axis=0) for x in X_train])/len(X_train)
@@ -507,11 +508,11 @@ def LSTM(x, y, test_size, hidden_size=8, num_layers=3):
 
 
 
-    padded_x_train, seq_len_x_train = collate_fn([torch.from_numpy(x) for x in X_train])
-    padded_x_test, seq_len_x_test = collate_fn([torch.from_numpy(x) for x in X_test])
+    padded_x_train, seq_len_x_train = collate_fn([torch.from_numpy(x).float() for x in X_train])
+    padded_x_test, seq_len_x_test = collate_fn([torch.from_numpy(x).float() for x in X_test])
 
-    padded_y_train, seq_len_y_train = collate_fn([torch.from_numpy(x) for x in y_train])
-    padded_y_test, seq_len_y_test = collate_fn([torch.from_numpy(x) for x in y_test])
+    padded_y_train, seq_len_y_train = collate_fn([torch.from_numpy(x).float() for x in y_train])
+    padded_y_test, seq_len_y_test = collate_fn([torch.from_numpy(x).float() for x in y_test])
 
 
     inputDim = X_train[0].shape[1]  # takes variable 'x'
@@ -555,7 +556,7 @@ def LSTM(x, y, test_size, hidden_size=8, num_layers=3):
 
             # get output from the model, given the inputs
             outputs, out_len_seq = model(pack_padded_sequence(inputs_batch, input_seq_len_batch, batch_first=True))
-
+            #print(outputs.shape, labels_batch.shape)
 
             # get loss for the predicted output
             loss += criterion(outputs, labels_batch)
@@ -572,13 +573,15 @@ def LSTM(x, y, test_size, hidden_size=8, num_layers=3):
 
         # update parameters
         optimizer.step()
-        print('epoch {}, loss {}'.format(epoch, loss.item()))
+        #print('epoch {}, loss {}'.format(epoch, loss.item()))
 
 
     with torch.no_grad():  # we don't need gradients in the testing phase
         if torch.cuda.is_available():
             y_pred, y_pred_out_len_seq = model(pack_padded_sequence(Variable(padded_x_test.cuda()), seq_len_x_test, batch_first=True))
+            #print(y_pred.shape, y_pred_out_len_seq.shape)
             y_pred = torch.gather(y_pred, 1, torch.unsqueeze(y_pred_out_len_seq - 1, 1).cuda())
+            #y_pred = torch.gather(torch.squeeze(y_pred), 1, torch.unsqueeze(y_pred_out_len_seq - 1, 1).cuda())
             y_pred = y_pred.cpu().data.numpy()
             y_true = torch.gather(padded_y_test.cuda(), 1, torch.unsqueeze(torch.tensor(seq_len_y_test, dtype=torch.int64) - 1, 1).cuda())
 
@@ -652,11 +655,11 @@ def GRU(x, y, test_size, hidden_size=8, num_layers=3):
 
 
 
-    padded_x_train, seq_len_x_train = collate_fn([torch.from_numpy(x) for x in X_train])
-    padded_x_test, seq_len_x_test = collate_fn([torch.from_numpy(x) for x in X_test])
+    padded_x_train, seq_len_x_train = collate_fn([torch.from_numpy(x).float() for x in X_train])
+    padded_x_test, seq_len_x_test = collate_fn([torch.from_numpy(x).float() for x in X_test])
 
-    padded_y_train, seq_len_y_train = collate_fn([torch.from_numpy(x) for x in y_train])
-    padded_y_test, seq_len_y_test = collate_fn([torch.from_numpy(x) for x in y_test])
+    padded_y_train, seq_len_y_train = collate_fn([torch.from_numpy(x).float() for x in y_train])
+    padded_y_test, seq_len_y_test = collate_fn([torch.from_numpy(x).float() for x in y_test])
 
 
     inputDim = X_train[0].shape[1]  # takes variable 'x'
@@ -717,7 +720,7 @@ def GRU(x, y, test_size, hidden_size=8, num_layers=3):
 
         # update parameters
         optimizer.step()
-        print('epoch {}, loss {}'.format(epoch, loss.item()))
+        #print('epoch {}, loss {}'.format(epoch, loss.item()))
 
 
     with torch.no_grad():  # we don't need gradients in the testing phase
@@ -796,11 +799,11 @@ def RNN(x, y, test_size, hidden_size=8, num_layers=3):
 
 
 
-    padded_x_train, seq_len_x_train = collate_fn([torch.from_numpy(x) for x in X_train])
-    padded_x_test, seq_len_x_test = collate_fn([torch.from_numpy(x) for x in X_test])
+    padded_x_train, seq_len_x_train = collate_fn([torch.from_numpy(x).float() for x in X_train])
+    padded_x_test, seq_len_x_test = collate_fn([torch.from_numpy(x).float() for x in X_test])
 
-    padded_y_train, seq_len_y_train = collate_fn([torch.from_numpy(x) for x in y_train])
-    padded_y_test, seq_len_y_test = collate_fn([torch.from_numpy(x) for x in y_test])
+    padded_y_train, seq_len_y_train = collate_fn([torch.from_numpy(x).float() for x in y_train])
+    padded_y_test, seq_len_y_test = collate_fn([torch.from_numpy(x).float() for x in y_test])
 
 
     inputDim = X_train[0].shape[1]  # takes variable 'x'
@@ -861,7 +864,7 @@ def RNN(x, y, test_size, hidden_size=8, num_layers=3):
 
         # update parameters
         optimizer.step()
-        print('epoch {}, loss {}'.format(epoch, loss.item()))
+        #print('epoch {}, loss {}'.format(epoch, loss.item()))
 
 
     with torch.no_grad():  # we don't need gradients in the testing phase
@@ -894,7 +897,7 @@ def RNN(x, y, test_size, hidden_size=8, num_layers=3):
 def main():
     df = pd.concat([
         pd.read_csv(f)
-        for f in glob.iglob('result_{}_*.csv'.format(PERIOD))], ignore_index=True)
+        for f in glob.iglob('results/result_{}_*.csv'.format(PERIOD))], ignore_index=True)
     print(df.info())
     #result = readData(chat, sc, mode=PERIOD)  #mode: d -- day, w -- week, m -- month
     x, y = dataSplit(df)
