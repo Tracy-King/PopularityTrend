@@ -40,7 +40,7 @@ parser.add_argument('--hidden', type=int, default=128,
                     help='Number of hidden embedding dimension.')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='Dropout rate (1 - keep probability).')
-parser.add_argument('--alpha', type=float, default=0.1,
+parser.add_argument('--alpha', type=float, default=0.5,
                     help='Hyper-parameter for graph structure learning.')
 parser.add_argument('--la', type=float, default=0.1,
                     help='Hyper-parameter for GSL constraints.')
@@ -50,8 +50,14 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
 parser.add_argument('--perf', action='store_true', default=True,
                     help='Percentage label.')
-parser.add_argument('--gsl', action='store_true', default=True,
+parser.add_argument('--gsl', action='store_true', default=False,
                     help='Using graph structure learning.')
+parser.add_argument('--no-bigraph', action='store_true', default=False,
+                    help='Not using bipartite graph in training.')
+parser.add_argument('--no-intra', action='store_true', default=True,
+                    help='Not using intra graphs in training.')
+parser.add_argument('--no-tsu', action='store_true', default=False,
+                    help='Not using time-sequence unit in training.')
 
 
 try:
@@ -122,7 +128,8 @@ if 0 > COLDSTART or COLDSTART >= len(datelist):
 
 
 model = MLN(datelist, node_feature, adj_viewer, adj_period, adj_description,
-            labels, nodes, nodelist, viewer_feature, bi_graph, args.hidden, device, args.dropout, args.perf, args.gsl)
+            labels, nodes, nodelist, viewer_feature, bi_graph, args.hidden, device, args.dropout, args.perf,
+            args.gsl, args.no_bigraph, args.no_intra, args.no_tsu)
 model = model.to(device)
 
 logger.debug("Num of dates: {}".format(len(datelist)))
