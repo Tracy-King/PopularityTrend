@@ -53,7 +53,7 @@ parser.add_argument('--no-bigraph', action='store_true', default=False,
                     help='Not using bipartite graph in training.')
 parser.add_argument('--no-intra', action='store_true', default=False,
                     help='Not using intra graphs in training.')
-parser.add_argument('--no-tsu', action='store_true', default=True,
+parser.add_argument('--no-tsu', action='store_true', default=False,
                     help='Not using time-sequence unit in training.')
 
 
