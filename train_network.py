@@ -151,10 +151,13 @@ avg_test_mape = [0.0] * args.epochs
 avg_test_r2 = [0.0] * args.epochs
 avg_test_mae = [0.0] * args.epochs
 avg_test_loss = [0.0] * args.epochs
+avg_test_rmse_std = [0.0] * args.epochs
 
 for epoch in range(args.epochs):
     logger.info('Epoch {:04d} start!'.format(epoch+1))
     t = time.time()
+
+    avg_tmp_rmse = []
 
     optimizer.zero_grad()
 
@@ -235,6 +238,7 @@ for epoch in range(args.epochs):
         avg_test_r2[epoch] += r2
         avg_test_mae[epoch] += mae
         avg_test_loss[epoch] += loss_val.item()
+        avg_tmp_rmse.append(rmse)
 
     #norm = np.array([norm_dict[x] for x in nodes[datelist[-2]]])  # [0]: mu, [1]: sigma
     #y_true_n = (y_true - torch.from_numpy(np.expand_dims(norm[:, 0], axis=1)).to(device)) / \
@@ -276,6 +280,8 @@ for epoch in range(args.epochs):
     avg_test_r2[epoch] /= slides_num
     avg_test_mae[epoch] /= slides_num
     avg_test_loss[epoch] /= slides_num
+    avg_test_rmse_std[epoch] = np.std(np.array(avg_tmp_rmse))
+
 
 
     if early_stopper.early_stop_check(avg_test_loss[epoch]):
@@ -287,7 +293,9 @@ for epoch in range(args.epochs):
     torch.cuda.empty_cache()
 
     logger.info("Avg test RMSE: {:.4f}, Avg test MAPE: {:.4f}, Avg test R2_score: {:.4f}, Avg test MAE: {:.4f}, "
-                "Avg test loss: {:.4f}".format(avg_test_rmse[epoch], avg_test_mape[epoch], avg_test_r2[epoch], avg_test_mae[epoch], avg_test_loss[epoch]))
+                "Avg test loss: {:.4f}, RMSE std: {:.4f}".format(avg_test_rmse[epoch], avg_test_mape[epoch],
+                                                                 avg_test_r2[epoch], avg_test_mae[epoch],
+                                                                 avg_test_loss[epoch], avg_test_rmse_std[epoch]))
 
 
 logger.info(f"Loading the best model at epoch {early_stopper.best_epoch}")
@@ -298,8 +306,8 @@ logger.info(f"Loaded the best model at epoch {early_stopper.best_epoch} for infe
 b = early_stopper.best_epoch
 
 logger.info("Best RMSE: {:.4f}, Best MAPE: {:.4f}, Best R2_score: {:.4f}, Best MAE: {:.4f}, "
-            "Best loss: {:.4f}".format(avg_test_rmse[b], avg_test_mape[b], avg_test_r2[b], avg_test_mae[b],
-                                           avg_test_loss[b]))
+            "Best loss: {:.4f}, RMSE std: {:.4f}".format(avg_test_rmse[b], avg_test_mape[b], avg_test_r2[b],
+                                                         avg_test_mae[b], avg_test_loss[b], avg_test_rmse_std[b]))
 
 
 
