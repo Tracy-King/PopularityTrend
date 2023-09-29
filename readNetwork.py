@@ -15,7 +15,7 @@ import baseline_seq
 import torch
 
 parser = argparse.ArgumentParser('TGN self-supervised training')
-parser.add_argument('--network', type=str, default="reddit",
+parser.add_argument('--network', type=str, default="wikipedia",
                     choices=['mooc', 'reddit', 'wikipedia'], help='Network name')
 parser.add_argument('--days', type=int, default=5, help='Days in a graph')
 
@@ -236,16 +236,17 @@ def Seqbaseline():
     datelist, item_feature_dict, adj_dict, adj_dict, empty_adj, label_dict, item_dict, item2id, user_feature_dict, biadj_dict = \
         readNetwork(network)
 
-    x = [item_feature_dict[i] for i in datelist]
-    y = [label_dict[i] for i in datelist]
+    x = [item_feature_dict[i].astype('float32') for i in datelist]
+    y = [label_dict[i].astype('float32') for i in datelist]
 
     t = 0.1
     layer = 2
 
     # LSTMFCN(x, y, test_size=t, num_layers=layer)
-    baseline_seq.LSTM(x, y, test_size=t, num_layers=layer)
-    baseline_seq.GRU(x, y, test_size=t, num_layers=layer)
-    baseline_seq.RNN(x, y, test_size=t, num_layers=layer)
+    #baseline_seq.LSTM(x, y, test_size=t, num_layers=layer)
+    #baseline_seq.GRU(x, y, test_size=t, num_layers=layer)
+    #baseline_seq.RNN(x, y, test_size=t, num_layers=layer)
+    baseline_seq.LSTM_FCN(x, y, test_size=t, num_layers=layer)
 
 
 def train():

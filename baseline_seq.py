@@ -15,7 +15,8 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error
 import math
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pack_sequence, pad_packed_sequence
-
+from lstmfcn import LSTMFCN
+import itertools
 
 
 pd.set_option('display.max_columns', None)
@@ -49,6 +50,11 @@ df = pd.concat([
 def dataSplit(df):
     df['target'] = df.groupby(['channelId'])['totalSC'].shift(-1)
     df = df.query('target == target')
+    df['perf'] = (df['target'] / df['totalSC']) - 1
+
+    df = df.query('perf <= 2.0')
+
+
     dfgroup = df.groupby(['channelId'])
     channelList = df['channelId'].drop_duplicates().tolist()
     #dateList = df['date'].drop_duplicates().tolist()
@@ -60,8 +66,8 @@ def dataSplit(df):
     for channel in channelList:
         tmp = dfgroup.get_group(channel).sort_values(by=['date'])
         #print(tmp)
-        x_ = tmp.drop(['date', 'channelId', 'target', 'Unnamed: 0'], axis=1).astype('float32').to_numpy()
-        y_ = tmp['target'].astype('float32').to_numpy()   #[-1]
+        x_ = tmp.drop(['date', 'channelId', 'target', 'Unnamed: 0', 'perf'], axis=1).astype('float32').to_numpy()
+        y_ = tmp['perf'].astype('float32').to_numpy()   #[-1]
         length = tmp.shape[0]
         #print(x_, y_, length)
         #print('___________________________')
@@ -894,6 +900,145 @@ def RNN(x, y, test_size, hidden_size=8, num_layers=3):
 
 
 
+def LSTM_FCN(x, y, test_size, hidden_size=8, num_layers=3):
+    x = [i for i in x if i.shape[0] > 2]
+    y = [i for i in y if i.shape[0] > 2]
+
+    X_train = [i[:-1] for i in x]
+    y_train = [i[:-1] for i in y]
+    X_test = x
+    y_test = y
+
+    mean = sum([x.mean(axis=0) for x in X_train]) / len(X_train)
+    X_train = [x - mean for x in X_train]  # 等价于 train_data = train_data - mean
+    std = sum([x.std(axis=0) for x in X_train]) / len(X_train)
+
+    X_train = [(x / (1 + std)) for x in X_train]
+
+    X_test = [x - mean for x in X_test]  # 训练集的均值和标准差
+    X_test = [(x / (1 + std)) for x in X_test]
+
+    #X_train = [torch.from_numpy(x).cuda() for x in X_train]
+
+
+    #padded_x_train, seq_len_x_train = collate_fn([torch.from_numpy(x).float() for x in X_train])
+    #padded_x_test, seq_len_x_test = collate_fn([torch.from_numpy(x).float() for x in X_test])
+
+    #padded_y_train, seq_len_y_train = collate_fn([torch.from_numpy(x).float() for x in y_train])
+    #padded_y_test, seq_len_y_test = collate_fn([torch.from_numpy(x).float() for x in y_test])
+
+    inputDim = X_train[0].shape[1]  # takes variable 'x'
+    learningRate = 0.01
+    epochs = 5
+    batch_size = 2000
+    num_instance = len(X_train)
+    num_batch = math.ceil(num_instance / batch_size)
+
+    model = LSTMFCN(inputDim, hidden_size, num_layers)
+    ##### For GPU #######
+    if torch.cuda.is_available():
+        model.cuda()
+    criterion = torch.nn.L1Loss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learningRate, weight_decay=0.01)
+
+    for epoch in range(epochs):
+        print('Epoch {}/{}'.format(epoch, epochs))
+        # Converting inputs and labels to Variable
+        if torch.cuda.is_available():
+            inputs = [Variable(torch.from_numpy(x).cuda()) for x in X_train]
+            # labels = Variable(torch.from_numpy(np.array(padded_y_train)).unsqueeze(1).cuda())
+            labels = [Variable(torch.from_numpy(x).cuda()) for x in y_train]
+        else:
+            inputs = [Variable(torch.from_numpy(x)) for x in X_train]
+            # labels = Variable(torch.from_numpy(np.array(padded_y_train)).unsqueeze(1))
+            labels = [Variable(torch.from_numpy(x)) for x in y_train]
+        # print(inputs.shape, labels.shape)
+        # Clear gradient buffers because we don't want any gradient from previous epoch to carry forward, dont want to cummulate gradients
+        optimizer.zero_grad()
+
+        for k in range(num_batch):
+            print('Batch {}/{}'.format(k, num_batch))
+            loss = 0
+            s_idx = k * batch_size
+            e_idx = min(num_instance, s_idx + batch_size)
+
+            inputs_batch = inputs[s_idx:e_idx]
+            #input_seq_len_batch = seq_len_x_train[s_idx:e_idx]
+            labels_batch = labels[s_idx:e_idx]
+
+            # get output from the model, given the inputs
+            outputs = [model(x) for x in inputs_batch]
+
+            # get loss for the predicted output
+            for i in range(len(outputs)):
+                #print(outputs[i].shape, labels_batch[i].shape)
+                loss += criterion(outputs[i], labels_batch[i])
+            if loss != loss:
+                print('loss={}'.format(loss))
+                print(torch.isnan(outputs).int().sum())
+                print(torch.isnan(labels_batch).int().sum())
+                print(s_idx, e_idx, k, num_batch)
+                print(outputs, labels_batch)
+                print(inputs_batch, labels_batch)
+                break
+            # get gradients w.r.t to parameters
+        loss.backward()
+
+        # update parameters
+        optimizer.step()
+        # print('epoch {}, loss {}'.format(epoch, loss.item()))
+
+    with torch.no_grad():  # we don't need gradients in the testing phase
+        if torch.cuda.is_available():
+            y_pred = [model(x).cpu().data.numpy() for x in [Variable(torch.from_numpy(x).cuda()) for x in X_test]]
+            y_true = y_test
+            '''
+            y_pred, y_pred_out_len_seq = model(
+                pack_padded_sequence(Variable(padded_x_test.cuda()), seq_len_x_test, batch_first=True))
+            y_pred = torch.gather(y_pred, 1, torch.unsqueeze(y_pred_out_len_seq - 1, 1).cuda())
+            y_pred = y_pred.cpu().data.numpy()
+            y_true = torch.gather(padded_y_test.cuda(), 1,
+                                  torch.unsqueeze(torch.tensor(seq_len_y_test, dtype=torch.int64) - 1, 1).cuda())
+            '''
+
+        else:
+            y_pred = [model(x).cpu().data.numpy() for x in [Variable(torch.from_numpy(x)) for x in X_test]]
+            y_true = y_test
+            '''
+            y_pred, y_pred_out_len_seq = model(
+                pack_padded_sequence(Variable(padded_x_test), seq_len_x_test, batch_first=True))
+            y_pred = torch.gather(y_pred, 1, torch.unsqueeze(y_pred_out_len_seq - 1, 1))
+            y_pred = y_pred.data.numpy()
+            y_true = torch.gather(padded_y_test, 1,
+                                  torch.unsqueeze(torch.tensor(seq_len_y_test, dtype=torch.int64) - 1, 1))
+            '''
+
+        # y_true = torch.gather(padded_y_test, 1, torch.unsqueeze(torch.Tensor(seq_len_y_test) - 1, 1))
+        #y_true = y_true.cpu().data.numpy()
+        rmse = 0.0
+        mape = 0.0
+
+        n_sample = 0
+
+        for i in range(len(y_pred)):
+            #print(y_true[i].shape, y_pred[i].shape)
+            rmse += math.sqrt(mean_squared_error(y_true[i], y_pred[i]))
+            mape += mean_absolute_percentage_error(y_true[i], y_pred[i])
+            n_sample += len(y_true[i])
+
+        rmse /= n_sample
+        mape /= n_sample
+
+        print('LSTMFCN----(t={}, l={})------'.format(test_size, num_layers))
+        print('RMSE: {}, MAPE: {}'.format(rmse, mape))
+        #f.write('RNN---(t={}, l={})--------\n'.format(test_size, num_layers))
+        #f.write('RMSE: {}, MAPE: {}\n'.format(rmse, mape))
+    return
+
+
+
+
+
 def main():
     df = pd.concat([
         pd.read_csv(f)
@@ -912,12 +1057,16 @@ def main():
     test_size = [i / 10 for i in range(1, 6, 1)]
     layers = [1, 2, 3]
 
-    #LSTMFCN(x, y, test_size=t, num_layers=layer)
-    for t in test_size:
-        for layer in layers:
-            LSTM(x, y, test_size=t, num_layers=layer)
-            GRU(x, y, test_size=t, num_layers=layer)
-            RNN(x, y, test_size=t, num_layers=layer)
+    #LSTM_FCN(x, y)
+
+    #for t in test_size:
+     #   for layer in layers:
+            #LSTM(x, y, test_size=t, num_layers=layer)
+            #GRU(x, y, test_size=t, num_layers=layer)
+            #RNN(x, y, test_size=t, num_layers=layer)
+
+    LSTM_FCN(x, y, test_size=t, num_layers=layer)
+
 
 
     #for t in test_size:
